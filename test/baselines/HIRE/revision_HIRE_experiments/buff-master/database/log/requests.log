@@ -1,0 +1,686 @@
+2022-09-29T15:14:29.352620-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff-simd", "10000", "1.1509"]
+2022-09-29T15:14:29.394391-05:00 - original size:4000000
+2022-09-29T15:14:29.394426-05:00 - compressed size:1437520
+2022-09-29T15:19:56.730589-05:00 - input args["target/release/comp_profiler"]
+2022-09-29T15:20:48.062733-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff-simd", "10000", "1.1509"]
+2022-09-29T15:20:48.103731-05:00 - original size:4000000
+2022-09-29T15:20:48.103771-05:00 - compressed size:1437520
+2022-09-29T15:21:53.415669-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff", "10000", "1.1509"]
+2022-09-29T15:21:53.454209-05:00 - original size:4000000
+2022-09-29T15:21:53.454251-05:00 - compressed size:1437520
+2022-09-29T15:36:16.253020-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff"]
+2022-09-29T15:36:31.411583-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff", "10000", "1.1509"]
+2022-09-29T15:36:31.452157-05:00 - original size:4000000
+2022-09-29T15:36:31.452187-05:00 - compressed size:1437520
+2022-09-29T15:38:14.485109-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff", "10000", "1.1509"]
+2022-09-29T15:38:14.525302-05:00 - original size:4000000
+2022-09-29T15:38:14.525332-05:00 - compressed size:1437520
+2022-09-29T15:39:42.095482-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff-simd", "10000", "1.1509"]
+2022-09-29T15:39:42.136085-05:00 - original size:4000000
+2022-09-29T15:39:42.136118-05:00 - compressed size:1437520
+2022-09-29T17:33:20.808796-05:00 - input args["target/release/comp_profiler", "./data/randomwalkdatasample1k-1k", "buff-simd", "10000", "1.1509"]
+2022-09-29T17:33:20.850294-05:00 - original size:4000000
+2022-09-29T17:33:20.850324-05:00 - compressed size:1437520
+2022-09-30T16:02:44.478478-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:02:44.923930-05:00 - original size:16
+2022-09-30T16:02:44.923960-05:00 - compressed size:26
+2022-09-30T16:04:07.068986-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:07.139912-05:00 - original size:16
+2022-09-30T16:04:07.139942-05:00 - compressed size:26
+2022-09-30T16:04:08.383066-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:08.396594-05:00 - original size:0
+2022-09-30T16:04:08.396622-05:00 - compressed size:20
+2022-09-30T16:04:09.774215-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:09.845917-05:00 - original size:0
+2022-09-30T16:04:09.845984-05:00 - compressed size:20
+2022-09-30T16:04:11.406324-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:11.567451-05:00 - original size:0
+2022-09-30T16:04:11.567486-05:00 - compressed size:20
+2022-09-30T16:04:13.841691-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:14.192925-05:00 - original size:0
+2022-09-30T16:04:14.192965-05:00 - compressed size:20
+2022-09-30T16:04:17.910593-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:18.040810-05:00 - original size:8
+2022-09-30T16:04:18.040843-05:00 - compressed size:28
+2022-09-30T16:04:20.772096-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:04:20.973692-05:00 - original size:0
+2022-09-30T16:04:20.973727-05:00 - compressed size:20
+2022-09-30T16:05:38.764669-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:38.835995-05:00 - original size:16
+2022-09-30T16:05:38.836020-05:00 - compressed size:26
+2022-09-30T16:05:40.072717-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:40.088584-05:00 - original size:0
+2022-09-30T16:05:40.088611-05:00 - compressed size:20
+2022-09-30T16:05:41.365332-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:41.446468-05:00 - original size:0
+2022-09-30T16:05:41.446507-05:00 - compressed size:20
+2022-09-30T16:05:42.821019-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:42.975631-05:00 - original size:0
+2022-09-30T16:05:42.975666-05:00 - compressed size:20
+2022-09-30T16:05:45.233867-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:45.576979-05:00 - original size:0
+2022-09-30T16:05:45.577017-05:00 - compressed size:20
+2022-09-30T16:05:49.316044-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:49.403987-05:00 - original size:8
+2022-09-30T16:05:49.404016-05:00 - compressed size:28
+2022-09-30T16:05:51.839140-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:05:52.030635-05:00 - original size:0
+2022-09-30T16:05:52.030669-05:00 - compressed size:20
+2022-09-30T16:07:07.201151-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:07.284273-05:00 - original size:16
+2022-09-30T16:07:07.284391-05:00 - compressed size:26
+2022-09-30T16:07:08.743660-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:08.757709-05:00 - original size:0
+2022-09-30T16:07:08.757739-05:00 - compressed size:20
+2022-09-30T16:07:10.319217-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:10.403065-05:00 - original size:0
+2022-09-30T16:07:10.403099-05:00 - compressed size:20
+2022-09-30T16:07:12.516086-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:12.661734-05:00 - original size:0
+2022-09-30T16:07:12.661768-05:00 - compressed size:20
+2022-09-30T16:07:14.623673-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:14.949682-05:00 - original size:0
+2022-09-30T16:07:14.949713-05:00 - compressed size:20
+2022-09-30T16:07:18.691181-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:18.781650-05:00 - original size:8
+2022-09-30T16:07:18.781683-05:00 - compressed size:28
+2022-09-30T16:07:21.890578-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:07:22.148686-05:00 - original size:0
+2022-09-30T16:07:22.148719-05:00 - compressed size:20
+2022-09-30T16:14:42.459915-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:14:42.549755-05:00 - original size:16
+2022-09-30T16:14:42.549785-05:00 - compressed size:26
+2022-09-30T16:14:47.322954-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:14:47.352866-05:00 - original size:0
+2022-09-30T16:14:47.352917-05:00 - compressed size:20
+2022-09-30T16:14:49.690120-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:14:49.779040-05:00 - original size:0
+2022-09-30T16:14:49.779069-05:00 - compressed size:20
+2022-09-30T16:14:51.753578-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:14:51.914841-05:00 - original size:0
+2022-09-30T16:14:51.914879-05:00 - compressed size:20
+2022-09-30T16:14:55.343639-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:14:56.307745-05:00 - original size:0
+2022-09-30T16:14:56.307784-05:00 - compressed size:20
+2022-09-30T16:15:06.531565-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:15:06.644913-05:00 - original size:8
+2022-09-30T16:15:06.644945-05:00 - compressed size:28
+2022-09-30T16:15:09.764638-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:15:09.967633-05:00 - original size:0
+2022-09-30T16:15:09.967673-05:00 - compressed size:20
+2022-09-30T16:16:12.288271-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:12.365025-05:00 - original size:16
+2022-09-30T16:16:12.365058-05:00 - compressed size:23
+2022-09-30T16:16:14.753684-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:14.774751-05:00 - original size:0
+2022-09-30T16:16:14.774851-05:00 - compressed size:20
+2022-09-30T16:16:16.182393-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:16.259660-05:00 - original size:0
+2022-09-30T16:16:16.259693-05:00 - compressed size:20
+2022-09-30T16:16:17.601593-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:17.736215-05:00 - original size:0
+2022-09-30T16:16:17.736247-05:00 - compressed size:20
+2022-09-30T16:16:19.590998-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:19.914816-05:00 - original size:0
+2022-09-30T16:16:19.914850-05:00 - compressed size:20
+2022-09-30T16:16:23.652125-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:23.752707-05:00 - original size:8
+2022-09-30T16:16:23.752739-05:00 - compressed size:28
+2022-09-30T16:16:26.411543-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:16:26.656086-05:00 - original size:0
+2022-09-30T16:16:26.656129-05:00 - compressed size:20
+2022-09-30T16:22:43.618594-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:22:43.755787-05:00 - original size:16
+2022-09-30T16:22:43.755831-05:00 - compressed size:23
+2022-09-30T16:22:47.706719-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:22:47.721282-05:00 - original size:0
+2022-09-30T16:22:47.721307-05:00 - compressed size:20
+2022-09-30T16:22:49.747748-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:22:49.844885-05:00 - original size:0
+2022-09-30T16:22:49.844920-05:00 - compressed size:20
+2022-09-30T16:22:51.659008-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:22:51.796131-05:00 - original size:0
+2022-09-30T16:22:51.796164-05:00 - compressed size:20
+2022-09-30T16:22:53.936771-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:22:54.292932-05:00 - original size:0
+2022-09-30T16:22:54.292992-05:00 - compressed size:20
+2022-09-30T16:23:03.405969-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:23:03.521772-05:00 - original size:8
+2022-09-30T16:23:03.521812-05:00 - compressed size:28
+2022-09-30T16:23:08.686302-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000", "1.1509"]
+2022-09-30T16:23:08.981246-05:00 - original size:0
+2022-09-30T16:23:08.981283-05:00 - compressed size:20
+2022-09-30T16:25:02.733646-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:02.824266-05:00 - original size:16
+2022-09-30T16:25:02.824302-05:00 - compressed size:26
+2022-09-30T16:25:05.334406-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:05.355669-05:00 - original size:0
+2022-09-30T16:25:05.355697-05:00 - compressed size:20
+2022-09-30T16:25:07.950029-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:08.065613-05:00 - original size:0
+2022-09-30T16:25:08.065658-05:00 - compressed size:20
+2022-09-30T16:25:10.368482-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:10.515817-05:00 - original size:0
+2022-09-30T16:25:10.515858-05:00 - compressed size:20
+2022-09-30T16:25:12.759208-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:13.230396-05:00 - original size:0
+2022-09-30T16:25:13.230437-05:00 - compressed size:20
+2022-09-30T16:25:23.720901-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:23.864053-05:00 - original size:8
+2022-09-30T16:25:23.864095-05:00 - compressed size:28
+2022-09-30T16:25:31.177752-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:25:31.811673-05:00 - original size:0
+2022-09-30T16:25:31.811727-05:00 - compressed size:20
+2022-09-30T16:29:03.261944-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:03.341013-05:00 - original size:16
+2022-09-30T16:29:03.341044-05:00 - compressed size:26
+2022-09-30T16:29:04.802087-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:04.816487-05:00 - original size:0
+2022-09-30T16:29:04.816513-05:00 - compressed size:20
+2022-09-30T16:29:06.394298-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:06.468845-05:00 - original size:0
+2022-09-30T16:29:06.468876-05:00 - compressed size:20
+2022-09-30T16:29:08.061851-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:08.237054-05:00 - original size:0
+2022-09-30T16:29:08.237090-05:00 - compressed size:20
+2022-09-30T16:29:10.539340-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:10.913212-05:00 - original size:0
+2022-09-30T16:29:10.913250-05:00 - compressed size:20
+2022-09-30T16:29:15.182025-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:15.286458-05:00 - original size:8
+2022-09-30T16:29:15.286492-05:00 - compressed size:28
+2022-09-30T16:29:18.660634-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:29:18.885327-05:00 - original size:0
+2022-09-30T16:29:18.885363-05:00 - compressed size:20
+2022-09-30T16:31:01.735970-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:01.804775-05:00 - original size:16
+2022-09-30T16:31:01.804803-05:00 - compressed size:26
+2022-09-30T16:31:03.294897-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:03.308650-05:00 - original size:0
+2022-09-30T16:31:03.308678-05:00 - compressed size:20
+2022-09-30T16:31:04.596587-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:04.667640-05:00 - original size:0
+2022-09-30T16:31:04.667672-05:00 - compressed size:20
+2022-09-30T16:31:07.620641-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:07.840863-05:00 - original size:0
+2022-09-30T16:31:07.840899-05:00 - compressed size:20
+2022-09-30T16:31:13.972940-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:14.323028-05:00 - original size:0
+2022-09-30T16:31:14.323066-05:00 - compressed size:20
+2022-09-30T16:31:18.005007-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:18.104237-05:00 - original size:8
+2022-09-30T16:31:18.104269-05:00 - compressed size:28
+2022-09-30T16:31:23.793692-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:31:23.997933-05:00 - original size:0
+2022-09-30T16:31:23.997973-05:00 - compressed size:20
+2022-09-30T16:33:47.190599-05:00 - input args["target/release/comp_profiler", "../../datasets/sensor_ht.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:47.273190-05:00 - original size:16
+2022-09-30T16:33:47.273224-05:00 - compressed size:22
+2022-09-30T16:33:48.729425-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_gyroscope.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:48.744337-05:00 - original size:0
+2022-09-30T16:33:48.744404-05:00 - compressed size:20
+2022-09-30T16:33:50.084491-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_gyroscope.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:50.158607-05:00 - original size:0
+2022-09-30T16:33:50.158639-05:00 - compressed size:20
+2022-09-30T16:33:52.283465-05:00 - input args["target/release/comp_profiler", "../../datasets/watch_accelerometer.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:52.442077-05:00 - original size:0
+2022-09-30T16:33:52.442111-05:00 - compressed size:20
+2022-09-30T16:33:54.196262-05:00 - input args["target/release/comp_profiler", "../../datasets/phones_accelerometer.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:54.539124-05:00 - original size:0
+2022-09-30T16:33:54.539159-05:00 - compressed size:20
+2022-09-30T16:33:58.998099-05:00 - input args["target/release/comp_profiler", "../../datasets/bitcoin.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:33:59.101273-05:00 - original size:8
+2022-09-30T16:33:59.101306-05:00 - compressed size:28
+2022-09-30T16:34:03.606974-05:00 - input args["target/release/comp_profiler", "../../datasets/power.npy", "buff-simd", "100", "1.1509"]
+2022-09-30T16:34:03.824362-05:00 - original size:0
+2022-09-30T16:34:03.824556-05:00 - compressed size:20
+2022-09-30T16:40:55.835046-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "100", "1.1509"]
+2022-09-30T16:40:55.929435-05:00 - original size:0
+2022-09-30T16:40:55.929463-05:00 - compressed size:20
+2022-09-30T16:40:57.159727-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "100", "1.1509"]
+2022-09-30T16:40:57.201191-05:00 - original size:0
+2022-09-30T16:40:57.201218-05:00 - compressed size:20
+2022-09-30T16:40:58.539414-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "100", "1.1509"]
+2022-09-30T16:40:58.579790-05:00 - original size:0
+2022-09-30T16:40:58.579814-05:00 - compressed size:20
+2022-09-30T16:41:00.150403-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "100", "1.1509"]
+2022-09-30T16:41:00.198502-05:00 - original size:0
+2022-09-30T16:41:00.198535-05:00 - compressed size:20
+2022-09-30T16:41:43.590930-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:41:43.934796-05:00 - original size:0
+2022-09-30T16:41:43.934830-05:00 - compressed size:20
+2022-09-30T16:41:48.254900-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:41:48.308940-05:00 - original size:0
+2022-09-30T16:41:48.308975-05:00 - compressed size:20
+2022-09-30T16:41:51.276802-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:41:51.335281-05:00 - original size:0
+2022-09-30T16:41:51.335318-05:00 - compressed size:20
+2022-09-30T16:41:53.196320-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:41:53.242799-05:00 - original size:0
+2022-09-30T16:41:53.242828-05:00 - compressed size:20
+2022-09-30T16:41:56.051016-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:41:56.097374-05:00 - original size:0
+2022-09-30T16:41:56.097402-05:00 - compressed size:20
+2022-09-30T16:42:00.812102-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:42:01.063659-05:00 - original size:0
+2022-09-30T16:42:01.063693-05:00 - compressed size:20
+2022-09-30T16:42:07.430673-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:42:07.559095-05:00 - original size:0
+2022-09-30T16:42:07.559127-05:00 - compressed size:20
+2022-09-30T16:43:35.587858-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:43:36.423400-05:00 - original size:46137344
+2022-09-30T16:43:36.423442-05:00 - compressed size:21626900
+2022-09-30T16:43:37.930648-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:43:38.083515-05:00 - original size:6291456
+2022-09-30T16:43:38.083549-05:00 - compressed size:2457620
+2022-09-30T16:43:39.673754-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:43:39.826886-05:00 - original size:6291456
+2022-09-30T16:43:39.826921-05:00 - compressed size:2457620
+2022-09-30T16:43:41.337963-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:43:41.493893-05:00 - original size:6291456
+2022-09-30T16:43:41.493930-05:00 - compressed size:2654228
+2022-09-30T16:43:43.499002-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:43:43.701175-05:00 - original size:6291456
+2022-09-30T16:43:43.701208-05:00 - compressed size:2654228
+2022-09-30T16:43:47.800810-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:55:44.353949-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:55:45.012835-05:00 - original size:46137344
+2022-09-30T16:55:45.012874-05:00 - compressed size:21626900
+2022-09-30T16:55:47.217670-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:55:47.300878-05:00 - original size:6291456
+2022-09-30T16:55:47.300927-05:00 - compressed size:2457620
+2022-09-30T16:59:22.483886-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:59:23.006495-05:00 - original size:46137344
+2022-09-30T16:59:23.006531-05:00 - compressed size:21626900
+2022-09-30T16:59:24.205290-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:59:24.277086-05:00 - original size:6291456
+2022-09-30T16:59:24.277131-05:00 - compressed size:2457620
+2022-09-30T16:59:25.284751-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:59:25.358748-05:00 - original size:6291456
+2022-09-30T16:59:25.358779-05:00 - compressed size:2457620
+2022-09-30T16:59:26.606608-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:59:26.696265-05:00 - original size:6291456
+2022-09-30T16:59:26.696298-05:00 - compressed size:2654228
+2022-09-30T16:59:28.156119-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T16:59:28.233757-05:00 - original size:6291456
+2022-09-30T16:59:28.233793-05:00 - compressed size:2654228
+2022-09-30T16:59:30.970794-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:04:56.494689-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:04:57.088467-05:00 - original size:46137344
+2022-09-30T17:04:57.088510-05:00 - compressed size:21626900
+2022-09-30T17:04:58.284723-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:04:58.364875-05:00 - original size:6291456
+2022-09-30T17:04:58.364907-05:00 - compressed size:2457620
+2022-09-30T17:04:59.527138-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:04:59.609090-05:00 - original size:6291456
+2022-09-30T17:04:59.609126-05:00 - compressed size:2457620
+2022-09-30T17:05:00.749446-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:05:00.825597-05:00 - original size:6291456
+2022-09-30T17:05:00.825630-05:00 - compressed size:2654228
+2022-09-30T17:05:02.447246-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:05:02.535428-05:00 - original size:6291456
+2022-09-30T17:05:02.535465-05:00 - compressed size:2654228
+2022-09-30T17:05:11.603516-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:05:51.696316-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:05:52.266224-05:00 - original size:46137344
+2022-09-30T17:05:52.266256-05:00 - compressed size:21626900
+2022-09-30T17:07:46.806330-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:07:47.404511-05:00 - original size:46137344
+2022-09-30T17:07:47.404542-05:00 - compressed size:21626900
+2022-09-30T17:07:49.394567-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:07:49.474052-05:00 - original size:6291456
+2022-09-30T17:07:49.474096-05:00 - compressed size:2457620
+2022-09-30T17:07:50.463878-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:07:50.545240-05:00 - original size:6291456
+2022-09-30T17:07:50.545273-05:00 - compressed size:2457620
+2022-09-30T17:08:42.439241-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:08:43.084240-05:00 - original size:46137344
+2022-09-30T17:08:43.084278-05:00 - compressed size:21626900
+2022-09-30T17:08:44.748908-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:08:44.977258-05:00 - original size:6291456
+2022-09-30T17:08:44.977291-05:00 - compressed size:2457620
+2022-09-30T17:08:46.726061-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:08:46.803050-05:00 - original size:6291456
+2022-09-30T17:08:46.803085-05:00 - compressed size:2457620
+2022-09-30T17:08:49.265781-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:08:49.348975-05:00 - original size:6291456
+2022-09-30T17:08:49.349012-05:00 - compressed size:2654228
+2022-09-30T17:08:50.918284-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:08:50.995209-05:00 - original size:6291456
+2022-09-30T17:08:50.995263-05:00 - compressed size:2654228
+2022-09-30T17:09:29.310096-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:09:30.009923-05:00 - original size:46137344
+2022-09-30T17:09:30.009959-05:00 - compressed size:21626900
+2022-09-30T17:09:31.610787-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:09:31.689066-05:00 - original size:6291456
+2022-09-30T17:09:31.689094-05:00 - compressed size:2457620
+2022-09-30T17:09:32.948540-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:09:33.023830-05:00 - original size:6291456
+2022-09-30T17:09:33.023861-05:00 - compressed size:2457620
+2022-09-30T17:09:34.326572-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:09:34.400188-05:00 - original size:6291456
+2022-09-30T17:09:34.400222-05:00 - compressed size:2654228
+2022-09-30T17:09:36.132617-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:09:36.222890-05:00 - original size:6291456
+2022-09-30T17:09:36.222927-05:00 - compressed size:2654228
+2022-09-30T17:09:38.925527-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:30.744102-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:31.454269-05:00 - original size:46137344
+2022-09-30T17:12:31.454323-05:00 - compressed size:21626900
+2022-09-30T17:12:33.670763-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:33.794643-05:00 - original size:6291456
+2022-09-30T17:12:33.794681-05:00 - compressed size:2457620
+2022-09-30T17:12:35.621498-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:35.707416-05:00 - original size:6291456
+2022-09-30T17:12:35.707453-05:00 - compressed size:2457620
+2022-09-30T17:12:37.170563-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:37.254710-05:00 - original size:6291456
+2022-09-30T17:12:37.254743-05:00 - compressed size:2654228
+2022-09-30T17:12:38.799943-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:12:38.882888-05:00 - original size:6291456
+2022-09-30T17:12:38.882923-05:00 - compressed size:2654228
+2022-09-30T17:12:41.689509-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:14:55.058576-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:14:55.631651-05:00 - original size:46137344
+2022-09-30T17:14:55.631689-05:00 - compressed size:21626900
+2022-09-30T17:14:56.997407-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:14:57.079208-05:00 - original size:6291456
+2022-09-30T17:14:57.079238-05:00 - compressed size:2457620
+2022-09-30T17:14:58.117443-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:14:58.200282-05:00 - original size:6291456
+2022-09-30T17:14:58.200317-05:00 - compressed size:2457620
+2022-09-30T17:14:59.392989-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:14:59.477666-05:00 - original size:6291456
+2022-09-30T17:14:59.477708-05:00 - compressed size:2654228
+2022-09-30T17:15:01.241315-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:15:01.320077-05:00 - original size:6291456
+2022-09-30T17:15:01.320111-05:00 - compressed size:2654228
+2022-09-30T17:15:03.939815-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:15:06.317931-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:15:06.749341-05:00 - original size:29360128
+2022-09-30T17:15:06.749380-05:00 - compressed size:13303828
+2022-09-30T17:33:58.072491-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:33:58.706533-05:00 - original size:46137344
+2022-09-30T17:33:58.706562-05:00 - compressed size:21626900
+2022-09-30T17:34:00.253194-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:00.328230-05:00 - original size:6291456
+2022-09-30T17:34:00.328268-05:00 - compressed size:2457620
+2022-09-30T17:34:01.501750-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:01.594547-05:00 - original size:6291456
+2022-09-30T17:34:01.594580-05:00 - compressed size:2457620
+2022-09-30T17:34:03.001711-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:03.085127-05:00 - original size:6291456
+2022-09-30T17:34:03.085178-05:00 - compressed size:2654228
+2022-09-30T17:34:04.799367-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:04.874776-05:00 - original size:6291456
+2022-09-30T17:34:04.874813-05:00 - compressed size:2654228
+2022-09-30T17:34:07.733894-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:10.887332-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:34:11.318517-05:00 - original size:29360128
+2022-09-30T17:34:11.318553-05:00 - compressed size:13303828
+2022-09-30T17:38:23.335732-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:38:23.863602-05:00 - original size:50331648
+2022-09-30T17:38:23.863635-05:00 - compressed size:31457300
+2022-09-30T17:38:27.505079-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:38:27.603886-05:00 - original size:8388608
+2022-09-30T17:38:27.603919-05:00 - compressed size:5242900
+2022-09-30T17:38:33.777408-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:38:33.948447-05:00 - original size:8388608
+2022-09-30T17:38:33.948491-05:00 - compressed size:5242900
+2022-09-30T17:38:48.623898-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:38:48.737905-05:00 - original size:8388608
+2022-09-30T17:38:48.737943-05:00 - compressed size:5242900
+2022-09-30T17:38:55.138715-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:38:55.339951-05:00 - original size:8388608
+2022-09-30T17:38:55.339990-05:00 - compressed size:5242900
+2022-09-30T17:39:16.816274-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:39:27.510948-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:39:27.887834-05:00 - original size:33554432
+2022-09-30T17:39:27.887871-05:00 - compressed size:20971540
+2022-09-30T17:42:24.139561-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:42:25.171995-05:00 - original size:46137344
+2022-09-30T17:42:25.172058-05:00 - compressed size:21626900
+2022-09-30T17:42:32.284492-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:42:32.376310-05:00 - original size:6291456
+2022-09-30T17:42:32.376348-05:00 - compressed size:2457620
+2022-09-30T17:42:38.811688-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:42:38.960986-05:00 - original size:6291456
+2022-09-30T17:42:38.961024-05:00 - compressed size:2457620
+2022-09-30T17:42:49.016339-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:42:49.142478-05:00 - original size:6291456
+2022-09-30T17:42:49.142531-05:00 - compressed size:2654228
+2022-09-30T17:42:55.439030-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:42:55.542387-05:00 - original size:6291456
+2022-09-30T17:42:55.542432-05:00 - compressed size:2654228
+2022-09-30T17:43:36.183596-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:43:54.600628-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:43:54.949516-05:00 - original size:29360128
+2022-09-30T17:43:54.949554-05:00 - compressed size:13303828
+2022-09-30T17:51:37.723618-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:51:38.272513-05:00 - original size:46137344
+2022-09-30T17:51:38.272547-05:00 - compressed size:21626900
+2022-09-30T17:51:39.665654-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:51:39.743304-05:00 - original size:6291456
+2022-09-30T17:51:39.743338-05:00 - compressed size:2457620
+2022-09-30T17:51:44.166106-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:51:44.250997-05:00 - original size:6291456
+2022-09-30T17:51:44.251041-05:00 - compressed size:2457620
+2022-09-30T17:51:46.038936-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:51:46.125091-05:00 - original size:6291456
+2022-09-30T17:51:46.125129-05:00 - compressed size:2654228
+2022-09-30T17:51:47.654336-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:51:47.738981-05:00 - original size:6291456
+2022-09-30T17:51:47.739019-05:00 - compressed size:2654228
+2022-09-30T17:51:57.729662-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:52:01.315386-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-09-30T17:52:01.925381-05:00 - original size:29360128
+2022-09-30T17:52:01.925659-05:00 - compressed size:13303828
+2022-10-28T14:43:41.218573-05:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:41.837083-05:00 - original size:46137344
+2022-10-28T14:43:41.837121-05:00 - compressed size:21626900
+2022-10-28T14:43:43.015377-05:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:43.089036-05:00 - original size:6291456
+2022-10-28T14:43:43.089065-05:00 - compressed size:2457620
+2022-10-28T14:43:43.990828-05:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:44.062009-05:00 - original size:6291456
+2022-10-28T14:43:44.062044-05:00 - compressed size:2457620
+2022-10-28T14:43:44.964147-05:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:45.034880-05:00 - original size:6291456
+2022-10-28T14:43:45.034929-05:00 - compressed size:2654228
+2022-10-28T14:43:46.139795-05:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:46.209126-05:00 - original size:6291456
+2022-10-28T14:43:46.209163-05:00 - compressed size:2654228
+2022-10-28T14:43:48.759408-05:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:51.516935-05:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2022-10-28T14:43:51.958898-05:00 - original size:29360128
+2022-10-28T14:43:51.958947-05:00 - compressed size:13303828
+2023-03-07T14:24:41.161615-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:41.243732-06:00 - original size:6291456
+2023-03-07T14:24:41.243773-06:00 - compressed size:2457620
+2023-03-07T14:24:42.738889-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:42.816367-06:00 - original size:6291456
+2023-03-07T14:24:42.816419-06:00 - compressed size:2457620
+2023-03-07T14:24:43.912691-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:43.986581-06:00 - original size:6291456
+2023-03-07T14:24:43.986621-06:00 - compressed size:2654228
+2023-03-07T14:24:45.058210-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:45.141058-06:00 - original size:6291456
+2023-03-07T14:24:45.141101-06:00 - compressed size:2654228
+2023-03-07T14:24:47.835652-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:50.214175-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:24:50.573386-06:00 - original size:29360128
+2023-03-07T14:24:50.573431-06:00 - compressed size:13303828
+2023-03-07T14:26:13.608910-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:14.157959-06:00 - original size:46137344
+2023-03-07T14:26:14.158005-06:00 - compressed size:21626900
+2023-03-07T14:26:15.277339-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:15.350880-06:00 - original size:6291456
+2023-03-07T14:26:15.350934-06:00 - compressed size:2457620
+2023-03-07T14:26:16.244212-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:16.320404-06:00 - original size:6291456
+2023-03-07T14:26:16.320445-06:00 - compressed size:2457620
+2023-03-07T14:26:17.284010-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:17.353093-06:00 - original size:6291456
+2023-03-07T14:26:17.353134-06:00 - compressed size:2654228
+2023-03-07T14:26:18.543245-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:18.621079-06:00 - original size:6291456
+2023-03-07T14:26:18.621120-06:00 - compressed size:2654228
+2023-03-07T14:26:20.980653-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:23.186726-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:26:23.532943-06:00 - original size:29360128
+2023-03-07T14:26:23.532984-06:00 - compressed size:13303828
+2023-03-07T14:27:20.547470-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:21.109944-06:00 - original size:46137344
+2023-03-07T14:27:21.110044-06:00 - compressed size:21626900
+2023-03-07T14:27:22.257779-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:22.328051-06:00 - original size:6291456
+2023-03-07T14:27:22.328089-06:00 - compressed size:2457620
+2023-03-07T14:27:23.252750-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:23.325797-06:00 - original size:6291456
+2023-03-07T14:27:23.325841-06:00 - compressed size:2457620
+2023-03-07T14:27:24.214717-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:24.294336-06:00 - original size:6291456
+2023-03-07T14:27:24.294386-06:00 - compressed size:2654228
+2023-03-07T14:27:25.510406-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:25.580982-06:00 - original size:6291456
+2023-03-07T14:27:25.581022-06:00 - compressed size:2654228
+2023-03-07T14:27:28.020404-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:30.251604-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:27:30.579751-06:00 - original size:29360128
+2023-03-07T14:27:30.579828-06:00 - compressed size:13303828
+2023-03-07T14:28:15.897871-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:16.436617-06:00 - original size:46137344
+2023-03-07T14:28:16.436702-06:00 - compressed size:21626900
+2023-03-07T14:28:17.479218-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:17.548381-06:00 - original size:6291456
+2023-03-07T14:28:17.548414-06:00 - compressed size:2457620
+2023-03-07T14:28:18.449787-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:18.525233-06:00 - original size:6291456
+2023-03-07T14:28:18.525274-06:00 - compressed size:2457620
+2023-03-07T14:28:19.473833-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:19.546680-06:00 - original size:6291456
+2023-03-07T14:28:19.546720-06:00 - compressed size:2654228
+2023-03-07T14:28:20.608646-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:20.676996-06:00 - original size:6291456
+2023-03-07T14:28:20.677035-06:00 - compressed size:2654228
+2023-03-07T14:28:22.986650-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:25.124842-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:28:25.461699-06:00 - original size:29360128
+2023-03-07T14:28:25.461742-06:00 - compressed size:13303828
+2023-03-07T14:31:24.886868-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:25.445895-06:00 - original size:46137344
+2023-03-07T14:31:25.445941-06:00 - compressed size:21626900
+2023-03-07T14:31:26.617207-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:26.689638-06:00 - original size:6291456
+2023-03-07T14:31:26.689704-06:00 - compressed size:2457620
+2023-03-07T14:31:27.549754-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:27.625076-06:00 - original size:6291456
+2023-03-07T14:31:27.625117-06:00 - compressed size:2457620
+2023-03-07T14:31:28.617755-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:28.687867-06:00 - original size:6291456
+2023-03-07T14:31:28.687910-06:00 - compressed size:2654228
+2023-03-07T14:31:29.878417-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:29.950486-06:00 - original size:6291456
+2023-03-07T14:31:29.950524-06:00 - compressed size:2654228
+2023-03-07T14:31:32.303229-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:34.436039-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:31:34.782944-06:00 - original size:29360128
+2023-03-07T14:31:34.783143-06:00 - compressed size:13303828
+2023-03-07T14:40:49.836521-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:50.398429-06:00 - original size:46137344
+2023-03-07T14:40:50.398472-06:00 - compressed size:21626900
+2023-03-07T14:40:51.855292-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:51.929565-06:00 - original size:6291456
+2023-03-07T14:40:51.929597-06:00 - compressed size:2457620
+2023-03-07T14:40:52.831969-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:52.905951-06:00 - original size:6291456
+2023-03-07T14:40:52.905991-06:00 - compressed size:2457620
+2023-03-07T14:40:53.787019-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:53.858856-06:00 - original size:6291456
+2023-03-07T14:40:53.858893-06:00 - compressed size:2654228
+2023-03-07T14:40:55.132315-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:55.204085-06:00 - original size:6291456
+2023-03-07T14:40:55.204133-06:00 - compressed size:2654228
+2023-03-07T14:40:57.607123-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:40:59.788087-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:41:00.134658-06:00 - original size:29360128
+2023-03-07T14:41:00.134694-06:00 - compressed size:13303828
+2023-03-07T14:41:56.576888-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:41:57.113525-06:00 - original size:46137344
+2023-03-07T14:41:57.113610-06:00 - compressed size:21626900
+2023-03-07T14:41:58.297210-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:41:58.366502-06:00 - original size:6291456
+2023-03-07T14:41:58.366559-06:00 - compressed size:2457620
+2023-03-07T14:41:59.228505-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:41:59.296455-06:00 - original size:6291456
+2023-03-07T14:41:59.296509-06:00 - compressed size:2457620
+2023-03-07T14:42:00.232432-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:00.300782-06:00 - original size:6291456
+2023-03-07T14:42:00.300821-06:00 - compressed size:2654228
+2023-03-07T14:42:01.314952-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:01.392289-06:00 - original size:6291456
+2023-03-07T14:42:01.392321-06:00 - compressed size:2654228
+2023-03-07T14:42:03.756568-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:05.995538-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:06.350377-06:00 - original size:29360128
+2023-03-07T14:42:06.350417-06:00 - compressed size:13303828
+2023-03-07T14:42:30.418239-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:30.965501-06:00 - original size:46137344
+2023-03-07T14:42:30.965538-06:00 - compressed size:21626900
+2023-03-07T14:42:32.024055-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:32.092918-06:00 - original size:6291456
+2023-03-07T14:42:32.092973-06:00 - compressed size:2457620
+2023-03-07T14:42:33.008783-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:33.077674-06:00 - original size:6291456
+2023-03-07T14:42:33.077752-06:00 - compressed size:2457620
+2023-03-07T14:42:33.968375-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:34.038216-06:00 - original size:6291456
+2023-03-07T14:42:34.038270-06:00 - compressed size:2654228
+2023-03-07T14:42:35.082447-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:35.149851-06:00 - original size:6291456
+2023-03-07T14:42:35.149941-06:00 - compressed size:2654228
+2023-03-07T14:42:37.584018-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:39.719112-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:42:40.086569-06:00 - original size:29360128
+2023-03-07T14:42:40.086616-06:00 - compressed size:13303828
+2023-03-07T14:43:19.645550-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:20.203836-06:00 - original size:46137344
+2023-03-07T14:43:20.203876-06:00 - compressed size:21626900
+2023-03-07T14:43:47.903564-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:48.423655-06:00 - original size:46137344
+2023-03-07T14:43:48.423699-06:00 - compressed size:21626900
+2023-03-07T14:43:49.551174-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:49.620547-06:00 - original size:6291456
+2023-03-07T14:43:49.620585-06:00 - compressed size:2457620
+2023-03-07T14:43:50.477110-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:50.546851-06:00 - original size:6291456
+2023-03-07T14:43:50.546923-06:00 - compressed size:2457620
+2023-03-07T14:43:51.414670-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:51.487380-06:00 - original size:6291456
+2023-03-07T14:43:51.487456-06:00 - compressed size:2654228
+2023-03-07T14:43:52.575167-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:52.647736-06:00 - original size:6291456
+2023-03-07T14:43:52.647811-06:00 - compressed size:2654228
+2023-03-07T14:43:55.096660-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:57.265223-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:43:57.622016-06:00 - original size:29360128
+2023-03-07T14:43:57.622523-06:00 - compressed size:13303828
+2023-03-07T14:59:17.908966-06:00 - input args["target/release/comp_profiler", "sensor_ht.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:18.474374-06:00 - original size:46137344
+2023-03-07T14:59:18.474409-06:00 - compressed size:21626900
+2023-03-07T14:59:19.924559-06:00 - input args["target/release/comp_profiler", "phones_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:19.994446-06:00 - original size:6291456
+2023-03-07T14:59:19.994535-06:00 - compressed size:2457620
+2023-03-07T14:59:20.848911-06:00 - input args["target/release/comp_profiler", "watch_gyroscope.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:20.917495-06:00 - original size:6291456
+2023-03-07T14:59:20.917531-06:00 - compressed size:2457620
+2023-03-07T14:59:21.776622-06:00 - input args["target/release/comp_profiler", "watch_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:21.851232-06:00 - original size:6291456
+2023-03-07T14:59:21.851268-06:00 - compressed size:2654228
+2023-03-07T14:59:23.002647-06:00 - input args["target/release/comp_profiler", "phones_accelerometer.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:23.075286-06:00 - original size:6291456
+2023-03-07T14:59:23.075336-06:00 - compressed size:2654228
+2023-03-07T14:59:25.411024-06:00 - input args["target/release/comp_profiler", "bitcoin.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:27.682270-06:00 - input args["target/release/comp_profiler", "power.npy.csv", "buff-simd", "1000000", "1.1509"]
+2023-03-07T14:59:28.027743-06:00 - original size:29360128
+2023-03-07T14:59:28.028216-06:00 - compressed size:13303828
