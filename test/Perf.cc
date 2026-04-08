@@ -530,6 +530,7 @@ void GenAblationTableDT(ExprTable &expr_table) {
   expr_table_output_stream.close();
 }
 
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -607,7 +608,9 @@ void PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
 void PerfDeflate(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -646,7 +649,9 @@ void PerfDeflate(std::ifstream &data_set_input_stream_ref, double max_diff, int 
   table_to_insert.insert(std::make_pair(ExprConf("Deflate", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_LZ4
 void PerfLZ4(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -685,7 +690,9 @@ void PerfLZ4(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   table_to_insert.insert(std::make_pair(ExprConf("LZ4", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_FPC
 void PerfFPC(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -724,7 +731,9 @@ void PerfFPC(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   table_to_insert.insert(std::make_pair(ExprConf("FPC", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ZSTD
 void PerfZstd(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
               const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -765,7 +774,9 @@ void PerfZstd(std::ifstream &data_set_input_stream_ref, double max_diff, int blo
   table_to_insert.insert(std::make_pair(ExprConf("Zstd", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
 void PerfSnappy(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -801,7 +812,9 @@ void PerfSnappy(std::ifstream &data_set_input_stream_ref, double max_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("Snappy", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ELF
 void PerfElf(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -843,7 +856,9 @@ void PerfElf(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
 void PerfChimp128(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                   const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -880,7 +895,9 @@ void PerfChimp128(std::ifstream &data_set_input_stream_ref, double max_diff, int
   table_to_insert.insert(std::make_pair(ExprConf("Chimp128", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_GORILLA
 void PerfGorilla(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -916,7 +933,9 @@ void PerfGorilla(std::ifstream &data_set_input_stream_ref, double max_diff, int 
   table_to_insert.insert(std::make_pair(ExprConf("Gorilla", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_LZ77
 void PerfLZ77(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
               const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -956,7 +975,9 @@ void PerfLZ77(std::ifstream &data_set_input_stream_ref, double max_diff, int blo
   table_to_insert.insert(std::make_pair(ExprConf("LZ77", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_MACHETE
 void PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -998,7 +1019,9 @@ void PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff, int 
   table_to_insert.insert(std::make_pair(ExprConf("Machete", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SZ2
 void PerfSZ2(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1039,7 +1062,9 @@ void PerfSZ2(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   table_to_insert.insert(std::make_pair(ExprConf("SZ2", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SIM_PIECE
 void PerfSimPiece(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                   const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1083,7 +1108,9 @@ void PerfSimPiece(std::ifstream &data_set_input_stream_ref, double max_diff, int
   table_to_insert.insert(std::make_pair(ExprConf("SimPiece", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SPRINTZ
 void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1122,7 +1149,9 @@ void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int 
   table_to_insert.insert(std::make_pair(ExprConf("Sprintz", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ALP
 void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1160,9 +1189,11 @@ void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
   table_to_insert.insert(std::make_pair(ExprConf("ALP", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 // Single Precision
 
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1240,7 +1271,9 @@ void PerfSerfQt_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
 void PerfDeflate_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1279,7 +1312,9 @@ void PerfDeflate_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
   table_to_insert.insert(std::make_pair(ExprConf("Deflate", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_LZ4
 void PerfLZ4_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1318,7 +1353,9 @@ void PerfLZ4_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   table_to_insert.insert(std::make_pair(ExprConf("LZ4", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_LZ77
 void PerfLZ77_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1358,7 +1395,9 @@ void PerfLZ77_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("LZ77", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
 void PerfSnappy_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                    const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1394,7 +1433,9 @@ void PerfSnappy_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
   table_to_insert.insert(std::make_pair(ExprConf("Snappy", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ZSTD
 void PerfZstd_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1431,7 +1472,9 @@ void PerfZstd_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("Zstd", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_SZ2
 void PerfSZ2_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1472,7 +1515,9 @@ void PerfSZ2_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   table_to_insert.insert(std::make_pair(ExprConf("SZ2", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ELF
 void PerfElf_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1514,7 +1559,9 @@ void PerfElf_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
   table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
 void PerfChimp128_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                      const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1555,9 +1602,11 @@ void PerfChimp128_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
   table_to_insert.insert(std::make_pair(ExprConf("Chimp128", data_set, block_size, max_diff, true), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 // Ablation
 
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXOR_Without_Shifter(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1675,9 +1724,11 @@ void PerfSerfXOR_Without_FastSearch(std::ifstream &data_set_input_stream_ref, do
                                         perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 // Relational error-bound
 
+#ifdef SERF_ENABLE_BASELINE_SZ2
 void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1718,7 +1769,9 @@ void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("SZ2_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXORRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1757,9 +1810,11 @@ void PerfSerfXORRel(std::ifstream &data_set_input_stream_ref, double rel_diff, i
   table_to_insert.insert(std::make_pair(ExprConf("SerfXOR_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 // Lambda Expr
 
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                        const std::string &data_set, int lambda, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1837,8 +1892,10 @@ void PerfSerfXORLambdaRel(std::ifstream &data_set_input_stream_ref, double max_d
   table_to_insert.insert(std::make_pair(ExprConf("SerfXOR_Rel", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 // Beta experiment
+#ifdef SERF_ENABLE_SERF
 void PerfSerfXORBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
                      int block_size, int beta, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1916,7 +1973,9 @@ void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string 
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ELF
 void PerfElfBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
                  int block_size, int beta, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1958,6 +2017,7 @@ void PerfElfBeta(std::ifstream &data_set_input_stream_ref, const std::string &da
   table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
 #ifdef RUN_OVERALL_EXPERIMENT
 TEST(Perf, Overall) {
@@ -1970,24 +2030,54 @@ TEST(Perf, Overall) {
     }
 
     // Lossy Compression
+#ifdef SERF_ENABLE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_MACHETE
     PerfMachete(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ2
     PerfSZ2(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SIM_PIECE
     PerfSimPiece(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SPRINTZ
     PerfSprintz(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
 
     // Lossless Compression
+#ifdef SERF_ENABLE_BASELINE_GORILLA
     PerfGorilla(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
     PerfChimp128(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
     PerfDeflate(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF
     PerfElf(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_FPC
     PerfFPC(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ4
     PerfLZ4(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ77
     PerfLZ77(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_ZSTD
     PerfZstd(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
     PerfSnappy(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
 
     data_input_stream.close();
   }
