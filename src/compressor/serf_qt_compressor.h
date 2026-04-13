@@ -9,6 +9,7 @@
 #include "utils/array.h"
 #include "utils/double.h"
 #include "utils/elias_gamma_codec.h"
+#include "utils/elias_delta_codec.h"
 #include "utils/zig_zag_codec.h"
 
 /*
