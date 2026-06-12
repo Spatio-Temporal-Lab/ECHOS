@@ -18,6 +18,7 @@ class SerfQtCompressor32 {
 
   Array<uint8_t> compressed_bytes();
 
+  // Finalizes the current block while preserving prediction state for the next block.
   void Close();
 
   long stored_compressed_size_in_bits() const;

@@ -33,10 +33,6 @@ uint32_t OutputBitStream::WriteInt(uint32_t content, uint32_t len) {
   return Write(static_cast<uint64_t>(content), len);
 }
 
-uint32_t OutputBitStream::WriteBit(bool bit) {
-  return Write(static_cast<uint64_t>(bit), 1);
-}
-
 Array<uint8_t> OutputBitStream::GetBuffer(uint32_t len) {
   Array<uint8_t> ret(len);
   for (auto &blk : data_) blk = htobe32(blk);

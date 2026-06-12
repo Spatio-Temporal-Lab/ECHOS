@@ -1,17 +1,10 @@
 #ifndef SERF_OUTPUT_BIT_STREAM_H
 #define SERF_OUTPUT_BIT_STREAM_H
 
-#ifndef __APPLE__
-#include <endian.h>
-#else
-#include <machine/endian.h>
-#define htobe32(x) htonl(x)
-#define be32toh(x) ntohl(x)
-#endif
-
 #include <cstdint>
 
 #include "array.h"
+#include "endian_compat.h"
 
 class OutputBitStream {
  public:
@@ -23,7 +16,15 @@ class OutputBitStream {
 
   uint32_t WriteInt(uint32_t content, uint32_t len);
 
-  uint32_t WriteBit(bool bit);
+  uint32_t WriteBit(bool bit) {
+    buffer_ |= static_cast<uint64_t>(bit) << (63 - bit_in_buffer_);
+    if (++bit_in_buffer_ >= 32) {
+      data_[cursor_++] = static_cast<uint32_t>(buffer_ >> 32);
+      buffer_ <<= 32;
+      bit_in_buffer_ -= 32;
+    }
+    return 1;
+  }
 
   void Flush();
 

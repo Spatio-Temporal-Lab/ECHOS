@@ -1,5 +1,7 @@
 #include "utils/input_bit_stream.h"
 
+#include <stdexcept>
+
 InputBitStream::InputBitStream(uint8_t *raw_data, size_t size) {
   data_ = Array<uint32_t>(std::ceil(static_cast<double>(size) / sizeof(uint32_t)));
   __builtin_memcpy(data_.begin(), raw_data, size);
@@ -38,10 +40,20 @@ uint32_t InputBitStream::ReadInt(size_t len) {
   return ret;
 }
 
-uint32_t InputBitStream::ReadBit() {
-  uint32_t ret = Peek(1);
-  Forward(1);
-  return ret;
+uint64_t InputBitStream::ReadUnaryZeros(uint64_t max_zeros) {
+  uint64_t zeros = 0;
+  while (true) {
+    const uint32_t next = static_cast<uint32_t>(Peek(32));
+    if (next != 0) {
+      const uint32_t next_zeros = static_cast<uint32_t>(__builtin_clz(next));
+      if (next_zeros >= max_zeros - zeros) throw std::runtime_error("Invalid unary code");
+      Forward(next_zeros + 1);
+      return zeros + next_zeros;
+    }
+    if (max_zeros - zeros <= 32) throw std::runtime_error("Invalid unary code");
+    Forward(32);
+    zeros += 32;
+  }
 }
 
 void InputBitStream::SetBuffer(const Array<uint8_t> &new_buffer) {

@@ -1,14 +1,6 @@
 #ifndef SERF_INPUT_BIT_STREAM_H
 #define SERF_INPUT_BIT_STREAM_H
 
-#ifndef __APPLE__
-#include <endian.h>
-#else
-#include <machine/endian.h>
-#define htobe32(x) htonl(x)
-#define be32toh(x) ntohl(x)
-#endif
-
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -17,6 +9,7 @@
 #include <cstdint>
 
 #include "array.h"
+#include "endian_compat.h"
 
 class InputBitStream {
  public:
@@ -28,7 +21,18 @@ class InputBitStream {
 
   uint32_t ReadInt(size_t len);
 
-  uint32_t ReadBit();
+  uint32_t ReadBit() {
+    const uint32_t result = static_cast<uint32_t>(buffer_ >> 63);
+    --bit_in_buffer_;
+    buffer_ <<= 1;
+    if (bit_in_buffer_ < 32 && cursor_ < data_.length()) {
+      buffer_ |= static_cast<uint64_t>(data_[cursor_++]) << (32 - bit_in_buffer_);
+      bit_in_buffer_ += 32;
+    }
+    return result;
+  }
+
+  uint64_t ReadUnaryZeros(uint64_t max_zeros);
 
   void SetBuffer(const Array<uint8_t> &new_buffer);
 

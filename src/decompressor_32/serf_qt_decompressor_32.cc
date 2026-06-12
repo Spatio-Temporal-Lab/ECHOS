@@ -4,7 +4,6 @@ std::vector<float> SerfQtDecompressor32::Decompress(const Array<uint8_t> &bs) {
   input_bit_stream_->SetBuffer(bs);
   block_size_ = input_bit_stream_->ReadInt(16);
   max_diff_ = Float::IntBitsToFloat(input_bit_stream_->ReadInt(32));
-  pre_value_ = 2;
   std::vector<float> decompressedValueList;
   decompressedValueList.reserve(block_size_);
   while (block_size_--) decompressedValueList.emplace_back(NextValue());

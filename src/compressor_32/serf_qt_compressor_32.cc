@@ -27,7 +27,6 @@ void SerfQtCompressor32::Close() {
   compressed_bytes_ = output_bit_stream_->GetBuffer(std::ceil(compressed_size_in_bits_ / 8.0));
   output_bit_stream_->Refresh();
   first_ = true;
-  pre_value_ = 2;
   stored_compressed_size_in_bits_ = compressed_size_in_bits_;
   compressed_size_in_bits_ = 0;
 }

@@ -88,6 +88,9 @@ endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
+option(SERF_ENABLE_GTEST_TARGETS "Build GoogleTest-based tests and performance program" ON)
+
+if(SERF_ENABLE_GTEST_TARGETS)
 message(STATUS "[SelfCheck] Loading GoogleTest module")
 
 # Set GoogleTest version
@@ -219,5 +222,14 @@ if(SERF_ENABLE_BASELINE_SZ_ADT)
 endif()
 
 gtest_discover_tests(PerformanceProgram)
+endif()
 
 add_executable(AdjustDigitCalculator adjust_digit_calculator.cpp)
+add_executable(SerfExtensionsValidation serf_extensions_validation.cc)
+target_link_libraries(SerfExtensionsValidation PRIVATE serf)
+add_executable(SerfExtensionsBenchmark serf_extensions_benchmark.cc)
+target_link_libraries(SerfExtensionsBenchmark PRIVATE serf)
+add_executable(AdaptiveRiceDecaySweep adaptive_rice_decay_sweep.cc)
+target_link_libraries(AdaptiveRiceDecaySweep PRIVATE serf)
+add_executable(AdaptiveRicePolicyBenchmark adaptive_rice_policy_benchmark.cc)
+target_link_libraries(AdaptiveRicePolicyBenchmark PRIVATE serf)

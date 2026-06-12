@@ -9,7 +9,7 @@
 #define RUN_OVERALL_EXPERIMENT
 // #define RUN_PARAM_ABS_MAX_DIFF_EXPERIMENT
 // #define RUN_PARAM_BLOCK_SIZE_EXPERIMENT
-// #define RUN_REL_EXPERIMENT
+#define RUN_REL_EXPERIMENT
 // #define RUN_SINGLE_PRECISION_EXPERIMENT
 // #define RUN_SERF_ABLATION_EXPERIMENT
 // #define RUN_LAMBDA_EXPERIMENT
@@ -462,6 +462,33 @@ void GenParamRelDiffTableDT(ExprTable &expr_table) {
   expr_table_output_stream.close();
 }
 
+void PrintParamRelDiffSummary(ExprTable &expr_table) {
+  std::cout << "RelativeError,Method,AvgCompressionRatio,AvgCompressionTimePerBlock,"
+               "AvgDecompressionTimePerBlock"
+            << std::endl;
+  for (const auto &max_diff : kMaxDiffRel) {
+    for (const auto &method : kMethodListRel) {
+      double sum_cr = 0;
+      double sum_ct = 0;
+      double sum_dt = 0;
+      int count = 0;
+      for (const auto &data_set : kDataSetList) {
+        ExprConf this_conf = ExprConf(method, data_set, kBlockSizeRel, max_diff);
+        const auto result = expr_table.find(this_conf);
+        if (result == expr_table.end()) continue;
+        sum_cr += result->second.CalCompressionRatio(this_conf);
+        sum_ct += result->second.AvgCompressionTimePerBlock();
+        sum_dt += result->second.AvgDecompressionTimePerBlock();
+        ++count;
+      }
+      if (count > 0) {
+        std::cout << max_diff << "," << method << "," << sum_cr / count << "," << sum_ct / count
+                  << "," << sum_dt / count << std::endl;
+      }
+    }
+  }
+}
+
 // Auto-Gen for the Ablation Experiment
 
 void GenAblationTableCR(ExprTable &expr_table) {
@@ -606,6 +633,124 @@ void PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int b
 
   perf_record.set_block_count(block_count);
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfAdaptiveSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                        const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  AdaptiveSerfQtCompressor compressor(block_size, max_diff);
+  AdaptiveSerfQtDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("AdaptiveSerfQt", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfAdaptiveSerfQtRice(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                            const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  AdaptiveSerfQtRiceCompressor compressor(block_size, max_diff);
+  AdaptiveSerfQtRiceDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(
+      std::make_pair(ExprConf("AdaptiveSerfQt-Rice", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfLogSerfQtRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
+                      const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  LogSerfQtCompressor compressor(block_size, rel_diff);
+  LogSerfQtDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("LogSerfQt_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 #endif
@@ -1973,6 +2118,85 @@ void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string 
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+
+void PerfAdaptiveSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
+                            int block_size, int beta, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  AdaptiveSerfQtCompressor compressor(block_size, max_diff);
+  AdaptiveSerfQtDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("AdaptiveSerfQt", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfAdaptiveSerfQtRiceBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set,
+                                double max_diff, int block_size, int beta, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  AdaptiveSerfQtRiceCompressor compressor(block_size, max_diff);
+  AdaptiveSerfQtRiceDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(
+      std::make_pair(ExprConf("AdaptiveSerfQt-Rice", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
 #endif
 
 #ifdef SERF_ENABLE_BASELINE_ELF
@@ -2033,6 +2257,8 @@ TEST(Perf, Overall) {
 #ifdef SERF_ENABLE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+    PerfAdaptiveSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+    PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_MACHETE
     PerfMachete(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
@@ -2102,6 +2328,8 @@ TEST(Perf, ParamAbsMaxDiff) {
     for (const auto &max_diff : kMaxDiffList) {
       PerfSerfXOR(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
+      PerfAdaptiveSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
+      PerfAdaptiveSerfQtRice(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSimPiece(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSZ2(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfMachete(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
@@ -2126,6 +2354,16 @@ TEST(Perf, ParamBlockSize) {
     for (const auto & block_size : kBlockSizeList) {
       PerfSerfXOR(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSerfQt(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfAdaptiveSerfQt(data_input_stream,
+                         kAbsMaxDiffParamBlockSize,
+                         block_size,
+                         data_set,
+                         expr_table_block_size);
+      PerfAdaptiveSerfQtRice(data_input_stream,
+                             kAbsMaxDiffParamBlockSize,
+                             block_size,
+                             data_set,
+                             expr_table_block_size);
       PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
@@ -2152,7 +2390,10 @@ TEST(Perf, Rel) {
 
     for (const auto &rel_diff : kMaxDiffRel) {
       PerfSerfXORRel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
+#ifdef SERF_ENABLE_BASELINE_SZ2
       PerfSZ2Rel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
+#endif
+      PerfLogSerfQtRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
     }
 
     data_input_stream.close();
@@ -2161,6 +2402,7 @@ TEST(Perf, Rel) {
   GenParamRelDiffTableCR(expr_table_rel);
   GenParamRelDiffTableCT(expr_table_rel);
   GenParamRelDiffTableDT(expr_table_rel);
+  PrintParamRelDiffSummary(expr_table_rel);
 }
 #endif
 
@@ -2277,19 +2519,47 @@ TEST(Perf, Beta) {
     ExprTable expr_table_beta;
     PerfSerfXORBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
     PerfSerfQtBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+    PerfAdaptiveSerfQtBeta(data_set_input_stream,
+                           chosen_data_set,
+                           kMaxDiffOverall,
+                           kBlockSizeOverall,
+                           beta,
+                           expr_table_beta);
+    PerfAdaptiveSerfQtRiceBeta(data_set_input_stream,
+                               chosen_data_set,
+                               kMaxDiffOverall,
+                               kBlockSizeOverall,
+                               beta,
+                               expr_table_beta);
+#ifdef SERF_ENABLE_BASELINE_ELF
     PerfElfBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+#endif
     ExprConf serf_xor_conf = ExprConf("SerfXOR", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
     ExprConf serf_qt_conf = ExprConf("SerfQt", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    ExprConf adaptive_serf_qt_conf = ExprConf("AdaptiveSerfQt", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    ExprConf adaptive_serf_qt_rice_conf =
+        ExprConf("AdaptiveSerfQt-Rice", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+#ifdef SERF_ENABLE_BASELINE_ELF
     ExprConf elf_conf = ExprConf("Elf", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+#endif
     result_output << beta << "," << "SerfXOR,"
                   << expr_table_beta.find(serf_xor_conf)->second.CalCompressionRatio(serf_xor_conf)
                   << std::endl;
     result_output << beta << "," << "SerfQt,"
                   << expr_table_beta.find(serf_qt_conf)->second.CalCompressionRatio(serf_qt_conf)
                   << std::endl;
+    result_output << beta << "," << "AdaptiveSerfQt,"
+                  << expr_table_beta.find(adaptive_serf_qt_conf)->second.CalCompressionRatio(adaptive_serf_qt_conf)
+                  << std::endl;
+    result_output << beta << "," << "AdaptiveSerfQt-Rice,"
+                  << expr_table_beta.find(adaptive_serf_qt_rice_conf)->second.CalCompressionRatio(
+                         adaptive_serf_qt_rice_conf)
+                  << std::endl;
+#ifdef SERF_ENABLE_BASELINE_ELF
     result_output << beta << "," << "Elf,"
                   << expr_table_beta.find(elf_conf)->second.CalCompressionRatio(elf_conf)
                   << std::endl;
+#endif
   }
 }
 #endif
@@ -2307,6 +2577,8 @@ TEST(Perf, TSBS) {
     // Lossy Compression
     PerfSerfXOR(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfAdaptiveSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfMachete(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSZ2(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSimPiece(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);

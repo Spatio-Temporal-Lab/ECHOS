@@ -7,6 +7,12 @@
 #include "decompressor/serf_xor_decompressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "decompressor/serf_qt_decompressor.h"
+#include "compressor/adaptive_serf_qt_compressor.h"
+#include "decompressor/adaptive_serf_qt_decompressor.h"
+#include "compressor/adaptive_serf_qt_rice_compressor.h"
+#include "decompressor/adaptive_serf_qt_rice_decompressor.h"
+#include "compressor/log_serf_qt_compressor.h"
+#include "decompressor/log_serf_qt_decompressor.h"
 #include "compressor_32/serf_xor_compressor_32.h"
 #include "decompressor_32/serf_xor_decompressor_32.h"
 #include "compressor/net_serf_xor_compressor.h"
@@ -16,6 +22,8 @@
 #include "compressor_32/serf_qt_compressor_32.h"
 #include "decompressor_32/serf_qt_decompressor_32.h"
 #include <filesystem>
+#include <limits>
+#include <stdexcept>
 #include <string>
 
 const std::string kDataSetDirPrefix_unitest = "../" + kDataSetDirPrefix;
@@ -63,10 +71,10 @@ TEST(Correctness, SerfQt) {
     }
 
     for (const auto &max_diff : kMaxDiffList) {
+      SerfQtCompressor qt_compressor(kBlockSizeOverall, max_diff);
+      SerfQtDecompressor qt_decompressor;
       std::vector<double> original_data;
       while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
-        SerfQtCompressor qt_compressor(kBlockSizeOverall, max_diff);
-        SerfQtDecompressor qt_decompressor;
         for (const auto &datum : original_data) {
           qt_compressor.AddValue(datum);
         }
@@ -212,3 +220,169 @@ TEST(Correctness, SerfQt) {
 //     data_set_input_stream.close();
 //   }
 // }
+
+TEST(Correctness, AdaptiveSerfQtStreaming) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &max_diff : kMaxDiffList) {
+      AdaptiveSerfQtCompressor compressor(kBlockSizeOverall, max_diff);
+      AdaptiveSerfQtDecompressor decompressor;
+      std::vector<double> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        for (double value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size()) << data_set << " max_diff=" << max_diff;
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          ASSERT_LE(std::abs(original_data[i] - recovered[i]), max_diff)
+              << data_set << " max_diff=" << max_diff
+              << " index=" << block_index * kBlockSizeOverall + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
+    data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, AdaptiveSerfQtRiceStreaming) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &max_diff : kMaxDiffList) {
+      AdaptiveSerfQtRiceCompressor compressor(kBlockSizeOverall, max_diff);
+      AdaptiveSerfQtRiceDecompressor decompressor;
+      std::vector<double> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        for (double value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size()) << data_set << " max_diff=" << max_diff;
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          ASSERT_LE(std::abs(original_data[i] - recovered[i]), max_diff)
+              << data_set << " max_diff=" << max_diff
+              << " index=" << block_index * kBlockSizeOverall + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
+    data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, AdaptiveSerfQtRiceMetadataChanges) {
+  AdaptiveSerfQtRiceCompressor compressor(4, 1.0E-3);
+  AdaptiveSerfQtRiceDecompressor decompressor;
+
+  const auto verify_block = [&](const std::vector<double> &original, double error_bound) {
+    for (double value : original) compressor.AddValue(value);
+    compressor.Close();
+    const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+    EXPECT_EQ(original.size(), recovered.size());
+    for (size_t i = 0; i < original.size(); ++i) {
+      EXPECT_LE(std::abs(original[i] - recovered[i]), error_bound);
+    }
+    return compressor.get_compressed_size_in_bits();
+  };
+
+  const long first_bits = verify_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
+  const long unchanged_bits = verify_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
+  EXPECT_GE(first_bits - unchanged_bits, 70);
+  AdaptiveSerfQtRiceDecompressor fresh_decompressor;
+  EXPECT_THROW(fresh_decompressor.Decompress(compressor.compressed_bytes()), std::runtime_error);
+
+  compressor.SetBlockConfig(3, 1.0E-3);
+  verify_block({2.0, 2.0, 2.0}, 1.0E-3);
+
+  compressor.SetBlockConfig(3, 1.0E-4);
+  verify_block({2.0, 2.0, 2.0}, 1.0E-4);
+}
+
+TEST(Correctness, LogSerfQtStreamingRelativeError) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &relative_error : kMaxDiffRel) {
+      LogSerfQtCompressor compressor(kBlockSizeOverall, relative_error);
+      LogSerfQtDecompressor decompressor;
+      std::vector<double> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        for (double value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size()) << data_set << " relative_error=" << relative_error;
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          const double original = original_data[i];
+          const double actual_error =
+              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
+                            : std::abs(original - recovered[i]) / std::abs(original);
+          if (original == 0) {
+            ASSERT_FALSE(std::signbit(recovered[i]))
+                << data_set << " relative_error=" << relative_error
+                << " index=" << block_index * kBlockSizeOverall + i;
+          } else {
+            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]))
+                << data_set << " relative_error=" << relative_error
+                << " index=" << block_index * kBlockSizeOverall + i;
+          }
+          ASSERT_LE(actual_error, relative_error)
+              << data_set << " relative_error=" << relative_error
+              << " index=" << block_index * kBlockSizeOverall + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
+    data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, LogSerfQtMetadataChangesAndZeroMode) {
+  LogSerfQtCompressor compressor(4, 1.0E-2);
+  LogSerfQtDecompressor decompressor;
+
+  const auto verify_block = [&](const std::vector<double> &original, double relative_error) {
+    for (double value : original) compressor.AddValue(value);
+    compressor.Close();
+    const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+    EXPECT_EQ(original.size(), recovered.size());
+    for (size_t i = 0; i < original.size(); ++i) {
+      if (original[i] == 0) {
+        EXPECT_EQ(recovered[i], 0.0);
+        EXPECT_FALSE(std::signbit(recovered[i]));
+      } else {
+        EXPECT_EQ(std::signbit(original[i]), std::signbit(recovered[i]));
+        EXPECT_LE(std::abs(original[i] - recovered[i]) / std::abs(original[i]), relative_error);
+      }
+    }
+    return compressor.get_compressed_size_in_bits();
+  };
+
+  const long first_bits = verify_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
+  const long unchanged_bits = verify_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
+  EXPECT_GE(first_bits - unchanged_bits, 70);
+  LogSerfQtDecompressor fresh_decompressor;
+  EXPECT_THROW(fresh_decompressor.Decompress(compressor.compressed_bytes()), std::runtime_error);
+
+  compressor.SetBlockConfig(3, 1.0E-2);
+  const long zero_bits = verify_block({0.0, -0.0, 0.0}, 1.0E-2);
+  EXPECT_LE(zero_bits, 2 + 16 + 3 * 4);
+
+  compressor.SetBlockConfig(3, 1.0E-3);
+  verify_block({1.0, -1.0, 1.001}, 1.0E-3);
+}
