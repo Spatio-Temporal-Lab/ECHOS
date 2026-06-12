@@ -20,17 +20,20 @@ enum class IntegerCodec : uint32_t {
 
 constexpr uint32_t kAdaptiveRiceDecayShift = 4;
 constexpr uint32_t kAdaptiveRiceMaxParameter = 12;
+constexpr uint32_t kAdaptiveRiceFormatQuotientCap = 32;
 constexpr uint64_t kAdaptiveRiceMagnitudeCap = 1ULL << 20;
 
 struct AdaptiveRiceChoice {
   IntegerCodec codec = IntegerCodec::kDelta;
   uint32_t rice_parameter = 0;
+  bool capped_rice = false;
 };
 
 struct AdaptiveRiceState {
   uint64_t delta_cost = 0;
   uint64_t gamma_cost = 0;
   uint64_t rice_cost = 0;
+  uint64_t capped_rice_cost = 0;
   uint64_t magnitude_sum = 0;
   uint64_t sample_count = 0;
 };
@@ -40,6 +43,11 @@ struct AdaptiveCodeLengths {
   uint64_t delta;
   uint64_t rice_direct;
   uint64_t rice;
+};
+
+struct AdaptiveRiceFormatLengths {
+  AdaptiveCodeLengths legacy;
+  uint64_t capped_rice;
 };
 
 inline uint64_t ZigZagEncode(int64_t value) {
@@ -100,6 +108,19 @@ inline uint64_t AdaptiveRiceLength(uint64_t mapped, uint32_t rice_parameter) {
   return std::min(1 + RiceLength(mapped - 1, rice_parameter), 2 + DeltaLength(mapped));
 }
 
+inline uint64_t CappedRiceLength(uint64_t mapped, uint32_t rice_parameter, uint32_t quotient_cap) {
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  return quotient < quotient_cap ? RiceLength(mapped - 1, rice_parameter)
+                                 : quotient_cap + DeltaLength(mapped);
+}
+
+inline uint64_t CappedRiceWithRawLength(uint64_t mapped, uint32_t rice_parameter,
+                                       uint32_t quotient_cap) {
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  return quotient < quotient_cap ? RiceLength(mapped - 1, rice_parameter)
+                                 : quotient_cap + 1 + DeltaLength(mapped);
+}
+
 inline AdaptiveCodeLengths CalculateAdaptiveCodeLengths(uint64_t mapped, uint32_t rice_parameter) {
   const uint64_t mapped_log = FloorLog2(mapped);
   const uint64_t value_bits = mapped_log + 1;
@@ -108,6 +129,35 @@ inline AdaptiveCodeLengths CalculateAdaptiveCodeLengths(uint64_t mapped, uint32_
   const uint64_t rice_direct_length = 1 + RiceLength(mapped - 1, rice_parameter);
   return {gamma_length, delta_length, rice_direct_length,
           std::min(rice_direct_length, 2 + delta_length)};
+}
+
+inline AdaptiveCodeLengths CalculateCappedRiceCodeLengths(uint64_t mapped, uint32_t rice_parameter,
+                                                          uint32_t quotient_cap) {
+  const uint64_t mapped_log = FloorLog2(mapped);
+  const uint64_t value_bits = mapped_log + 1;
+  const uint64_t gamma_length = 2 * mapped_log + 1;
+  const uint64_t delta_length = GammaLength(value_bits) + value_bits - 1;
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  const uint64_t rice_direct_length = quotient + rice_parameter + 1;
+  return {gamma_length, delta_length, rice_direct_length,
+          quotient < quotient_cap ? rice_direct_length : quotient_cap + delta_length};
+}
+
+inline AdaptiveRiceFormatLengths CalculateAdaptiveRiceFormatLengths(uint64_t mapped,
+                                                                    uint32_t rice_parameter) {
+  const uint64_t mapped_log = FloorLog2(mapped);
+  const uint64_t value_bits = mapped_log + 1;
+  const uint64_t gamma_length = 2 * mapped_log + 1;
+  const uint64_t delta_length = GammaLength(value_bits) + value_bits - 1;
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  const uint64_t capped_direct_length =
+      SaturatingAdd(quotient, static_cast<uint64_t>(rice_parameter) + 1);
+  const uint64_t legacy_direct_length = SaturatingAdd(capped_direct_length, 1);
+  return {{gamma_length, delta_length, legacy_direct_length,
+           std::min(legacy_direct_length, 2 + delta_length)},
+          quotient < kAdaptiveRiceFormatQuotientCap
+              ? capped_direct_length
+              : kAdaptiveRiceFormatQuotientCap + 1 + delta_length};
 }
 
 inline bool ShouldUseRiceDeltaFallback(const AdaptiveCodeLengths &lengths) {
@@ -129,6 +179,24 @@ inline AdaptiveRiceChoice SelectAdaptiveRiceCodec(const AdaptiveRiceState &state
   return choice;
 }
 
+inline AdaptiveRiceChoice SelectAdaptiveRiceCodecAndFormat(const AdaptiveRiceState &state) {
+  AdaptiveRiceChoice choice{IntegerCodec::kDelta, EstimateRiceParameter(state), false};
+  uint64_t selected_cost = state.delta_cost;
+  if (state.gamma_cost < selected_cost) {
+    choice.codec = IntegerCodec::kGamma;
+    selected_cost = state.gamma_cost;
+  }
+  if (state.rice_cost < selected_cost) {
+    choice.codec = IntegerCodec::kRice;
+    selected_cost = state.rice_cost;
+  }
+  if (state.capped_rice_cost < selected_cost) {
+    choice.codec = IntegerCodec::kRice;
+    choice.capped_rice = true;
+  }
+  return choice;
+}
+
 inline void UpdateAdaptiveRiceState(uint64_t mapped, const AdaptiveCodeLengths &lengths,
                                     AdaptiveRiceState *state) {
   state->delta_cost = DecayAndAdd(state->delta_cost, lengths.delta);
@@ -141,6 +209,18 @@ inline void UpdateAdaptiveRiceState(uint64_t mapped, const AdaptiveCodeLengths &
 
 inline void UpdateAdaptiveRiceState(uint64_t mapped, uint32_t rice_parameter, AdaptiveRiceState *state) {
   UpdateAdaptiveRiceState(mapped, CalculateAdaptiveCodeLengths(mapped, rice_parameter), state);
+}
+
+inline void UpdateAdaptiveRiceFormatState(uint64_t mapped,
+                                          const AdaptiveRiceFormatLengths &lengths,
+                                          AdaptiveRiceState *state) {
+  state->delta_cost = DecayAndAdd(state->delta_cost, lengths.legacy.delta);
+  state->gamma_cost = DecayAndAdd(state->gamma_cost, lengths.legacy.gamma);
+  state->rice_cost = DecayAndAdd(state->rice_cost, lengths.legacy.rice);
+  state->capped_rice_cost = DecayAndAdd(state->capped_rice_cost, lengths.capped_rice);
+  state->magnitude_sum =
+      DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
+  state->sample_count = DecayAndAdd(state->sample_count, 1);
 }
 
 inline void WriteZeros(uint64_t count, OutputBitStream *output) {
@@ -191,6 +271,60 @@ inline uint64_t DecodeRice(uint32_t parameter, InputBitStream *input) {
       input->ReadUnaryZeros(std::numeric_limits<uint64_t>::max() >> parameter);
   const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
   return (quotient << parameter) | remainder;
+}
+
+inline uint64_t EncodeCappedRice(uint64_t mapped, uint32_t parameter, uint32_t quotient_cap,
+                                 OutputBitStream *output) {
+  const uint64_t quotient = (mapped - 1) >> parameter;
+  if (quotient < quotient_cap) {
+    WriteZeros(quotient, output);
+    output->WriteBit(true);
+    if (parameter > 0) output->WriteLong(mapped - 1, parameter);
+    return quotient + 1 + parameter;
+  }
+  WriteZeros(quotient_cap, output);
+  return quotient_cap + EncodeDelta(mapped, output);
+}
+
+inline uint64_t DecodeCappedRice(uint32_t parameter, uint32_t quotient_cap, InputBitStream *input) {
+  const uint64_t quotient = input->ReadUnaryZerosOrCap(quotient_cap);
+  if (quotient == quotient_cap) return DecodeDelta(input);
+  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
+  return ((quotient << parameter) | remainder) + 1;
+}
+
+inline uint64_t EncodeCappedRiceWithRaw(uint64_t mapped, uint32_t parameter,
+                                       OutputBitStream *output) {
+  const uint64_t quotient = (mapped - 1) >> parameter;
+  if (quotient < kAdaptiveRiceFormatQuotientCap) {
+    WriteZeros(quotient, output);
+    output->WriteBit(true);
+    if (parameter > 0) output->WriteLong(mapped - 1, parameter);
+    return quotient + 1 + parameter;
+  }
+  WriteZeros(kAdaptiveRiceFormatQuotientCap, output);
+  output->WriteBit(false);
+  return kAdaptiveRiceFormatQuotientCap + 1 + EncodeDelta(mapped, output);
+}
+
+inline uint64_t WriteCappedRiceRaw(OutputBitStream *output) {
+  WriteZeros(kAdaptiveRiceFormatQuotientCap, output);
+  output->WriteBit(true);
+  return kAdaptiveRiceFormatQuotientCap + 1;
+}
+
+inline uint64_t DecodeCappedRiceWithRaw(uint32_t parameter, bool *raw, InputBitStream *input) {
+  *raw = false;
+  const uint64_t quotient = input->ReadUnaryZerosOrCap(kAdaptiveRiceFormatQuotientCap);
+  if (quotient == kAdaptiveRiceFormatQuotientCap) {
+    if (input->ReadBit()) {
+      *raw = true;
+      return 1;
+    }
+    return DecodeDelta(input);
+  }
+  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
+  return ((quotient << parameter) | remainder) + 1;
 }
 
 inline uint64_t EncodedLength(uint64_t mapped, IntegerCodec codec, uint32_t rice_parameter) {

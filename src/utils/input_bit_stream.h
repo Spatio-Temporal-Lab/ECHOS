@@ -33,6 +33,38 @@ class InputBitStream {
   }
 
   uint64_t ReadUnaryZeros(uint64_t max_zeros);
+  uint64_t ReadUnaryZerosOrCap(uint32_t max_zeros) {
+    if (max_zeros <= 32) {
+      const uint32_t next = static_cast<uint32_t>(Peek(32));
+      const uint32_t next_zeros = next == 0 ? 32 : static_cast<uint32_t>(__builtin_clz(next));
+      if (next_zeros >= max_zeros) {
+        Forward(max_zeros);
+        return max_zeros;
+      }
+      Forward(next_zeros + 1);
+      return next_zeros;
+    }
+
+    uint64_t zeros = 0;
+    while (true) {
+      const uint32_t next = static_cast<uint32_t>(Peek(32));
+      if (next != 0) {
+        const uint32_t next_zeros = static_cast<uint32_t>(__builtin_clz(next));
+        if (next_zeros >= max_zeros - zeros) {
+          Forward(max_zeros - zeros);
+          return max_zeros;
+        }
+        Forward(next_zeros + 1);
+        return zeros + next_zeros;
+      }
+      if (max_zeros - zeros <= 32) {
+        Forward(max_zeros - zeros);
+        return max_zeros;
+      }
+      Forward(32);
+      zeros += 32;
+    }
+  }
 
   void SetBuffer(const Array<uint8_t> &new_buffer);
 

@@ -34,13 +34,16 @@ class LogSerfQtCompressor {
   };
 
   struct Choice {
-    Mode mode = Mode::kRaw;
-    AdaptiveQtCodec::AdaptiveRiceChoice integer_choice{};
-    uint64_t mapped = 1;
-    double recovered_log = 0;
-    double recovered_value = 1;
-    bool sign = false;
-    uint64_t bits = 68;
+    Mode mode;
+    AdaptiveQtCodec::AdaptiveRiceChoice integer_choice;
+    AdaptiveQtCodec::AdaptiveCodeLengths lengths;
+    uint64_t mapped;
+    double original_log;
+    double recovered_log;
+    double recovered_value;
+    bool sign;
+    bool has_original_log;
+    uint64_t bits;
   };
 
   void UpdateErrorConfig(double relative_error_bound);

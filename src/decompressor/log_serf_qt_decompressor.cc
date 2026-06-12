@@ -10,6 +10,8 @@
 
 namespace {
 
+constexpr uint32_t kRiceQuotientCap = 16;
+
 enum class Mode {
   kRepeat,
   kSameSignPositiveResidual,
@@ -23,15 +25,11 @@ enum class Mode {
 
 Mode ReadMode(InputBitStream *input) {
   if (input->ReadBit() == 0) return Mode::kRepeat;
-  if (input->ReadBit() == 0) {
-    return input->ReadBit() == 0 ? Mode::kSameSignPositiveResidual
-                                 : Mode::kSameSignNegativeResidual;
-  }
-  if (input->ReadBit() == 0) {
-    if (input->ReadBit() == 0) return Mode::kChangedSignZeroResidual;
-    return input->ReadBit() == 0 ? Mode::kChangedSignPositiveResidual
-                                 : Mode::kChangedSignNegativeResidual;
-  }
+  if (input->ReadBit() == 0) return Mode::kSameSignNegativeResidual;
+  if (input->ReadBit() == 0) return Mode::kSameSignPositiveResidual;
+  if (input->ReadBit() == 0) return Mode::kChangedSignNegativeResidual;
+  if (input->ReadBit() == 0) return Mode::kChangedSignPositiveResidual;
+  if (input->ReadBit() == 0) return Mode::kChangedSignZeroResidual;
   return input->ReadBit() == 0 ? Mode::kZero : Mode::kRaw;
 }
 
@@ -90,12 +88,7 @@ std::vector<double> LogSerfQtDecompressor::Decompress(const Array<uint8_t> &byte
                                    mode == Mode::kChangedSignNegativeResidual;
     uint64_t mapped;
     if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-      if (!input.ReadBit()) {
-        mapped = AdaptiveQtCodec::DecodeMapped(choice.codec, choice.rice_parameter, &input);
-      } else {
-        if (input.ReadBit()) throw std::runtime_error("Invalid Log Serf-QT Rice fallback");
-        mapped = AdaptiveQtCodec::DecodeMapped(AdaptiveQtCodec::IntegerCodec::kDelta, 0, &input);
-      }
+      mapped = AdaptiveQtCodec::DecodeCappedRice(choice.rice_parameter, kRiceQuotientCap, &input);
     } else {
       mapped = AdaptiveQtCodec::DecodeMapped(choice.codec, choice.rice_parameter, &input);
     }
@@ -110,7 +103,10 @@ std::vector<double> LogSerfQtDecompressor::Decompress(const Array<uint8_t> &byte
     const double magnitude = std::exp(previous_log_);
     previous_value_ = previous_sign_ ? -magnitude : magnitude;
     result.push_back(previous_value_);
-    AdaptiveQtCodec::UpdateAdaptiveRiceState(mapped, choice.rice_parameter, &adaptive_state_);
+    const AdaptiveQtCodec::AdaptiveCodeLengths lengths =
+        AdaptiveQtCodec::CalculateCappedRiceCodeLengths(mapped, choice.rice_parameter,
+                                                        kRiceQuotientCap);
+    AdaptiveQtCodec::UpdateAdaptiveRiceState(mapped, lengths, &adaptive_state_);
   }
   return result;
 }

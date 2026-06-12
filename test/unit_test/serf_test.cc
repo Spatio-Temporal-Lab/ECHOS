@@ -381,7 +381,7 @@ TEST(Correctness, LogSerfQtMetadataChangesAndZeroMode) {
 
   compressor.SetBlockConfig(3, 1.0E-2);
   const long zero_bits = verify_block({0.0, -0.0, 0.0}, 1.0E-2);
-  EXPECT_LE(zero_bits, 2 + 16 + 3 * 4);
+  EXPECT_LE(zero_bits, 2 + 16 + 3 * 7);
 
   compressor.SetBlockConfig(3, 1.0E-3);
   verify_block({1.0, -1.0, 1.001}, 1.0E-3);

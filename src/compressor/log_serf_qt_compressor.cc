@@ -8,18 +8,20 @@
 
 namespace {
 
-bool QuantizeLog(double value, double prediction, double log_max_diff, double inverse_log_step,
+constexpr uint32_t kRiceQuotientCap = 16;
+
+bool QuantizeLog(double magnitude, double prediction, double log_max_diff, double inverse_log_step,
                  double lower_log_error_bound, double upper_log_error_bound, int64_t *q,
-                 double *recovered_log, double *recovered_magnitude) {
-  if (!std::isfinite(value) || value == 0) return false;
-  const double target_log = std::log(std::abs(value));
-  const double scaled = (target_log - prediction) * inverse_log_step;
+                 double *target_log, double *recovered_log) {
+  if (!std::isfinite(magnitude) || magnitude == 0) return false;
+  *target_log = std::log(magnitude);
+  const double scaled = (*target_log - prediction) * inverse_log_step;
   if (!std::isfinite(scaled)) return false;
 
   if (std::abs(scaled) > 0x1p52) {
     const long double step = 2.0L * static_cast<long double>(log_max_diff);
     const long double precise_scaled =
-        (static_cast<long double>(target_log) - static_cast<long double>(prediction)) / step;
+        (static_cast<long double>(*target_log) - static_cast<long double>(prediction)) / step;
     if (!std::isfinite(precise_scaled)) return false;
     const long double precise_rounded = std::round(precise_scaled);
     if (precise_rounded <= static_cast<long double>(std::numeric_limits<int64_t>::min()) ||
@@ -34,10 +36,28 @@ bool QuantizeLog(double value, double prediction, double log_max_diff, double in
   if (*q == std::numeric_limits<int64_t>::min()) return false;
 
   *recovered_log = prediction + 2 * log_max_diff * static_cast<double>(*q);
-  const double log_error = *recovered_log - target_log;
+  const double log_error = *recovered_log - *target_log;
   if (log_error < lower_log_error_bound || log_error > upper_log_error_bound) return false;
-  *recovered_magnitude = std::exp(*recovered_log);
-  return std::isfinite(*recovered_magnitude);
+  return true;
+}
+
+uint64_t ResidualPrefixLength(bool changed_sign, bool positive) {
+  return (changed_sign ? 4 : 2) + static_cast<uint64_t>(positive);
+}
+
+uint64_t SelectedLength(const AdaptiveQtCodec::AdaptiveCodeLengths &lengths,
+                        AdaptiveQtCodec::IntegerCodec codec) {
+  switch (codec) {
+    case AdaptiveQtCodec::IntegerCodec::kGamma:
+      return lengths.gamma;
+    case AdaptiveQtCodec::IntegerCodec::kDelta:
+      return lengths.delta;
+    case AdaptiveQtCodec::IntegerCodec::kRice:
+      return lengths.rice;
+    case AdaptiveQtCodec::IntegerCodec::kRaw:
+      return 64;
+  }
+  throw std::runtime_error("Unknown integer codec");
 }
 
 }  // namespace
@@ -86,63 +106,67 @@ void LogSerfQtCompressor::WriteMetadata() {
 
 LogSerfQtCompressor::Choice LogSerfQtCompressor::Choose(double value) const {
   Choice best;
+  best.mode = Mode::kRaw;
   best.sign = std::signbit(value);
+  best.has_original_log = false;
+  best.bits = 71;
 
   if (value == 0) {
     best.mode = Mode::kZero;
-    best.bits = 4;
+    best.bits = 7;
     return best;
   }
 
+  const double magnitude = std::abs(value);
   if (std::isfinite(value) && best.sign == previous_sign_ &&
-      std::abs(previous_value_ - value) <= relative_error_bound_ * std::abs(value)) {
+      std::abs(previous_value_ - value) <= relative_error_bound_ * magnitude) {
     best.mode = Mode::kRepeat;
     best.bits = 1;
     return best;
   }
   if (std::isfinite(value) && best.sign != previous_sign_ &&
-      std::abs(std::abs(previous_value_) - std::abs(value)) <=
-          relative_error_bound_ * std::abs(value)) {
+      std::abs(std::abs(previous_value_) - magnitude) <= relative_error_bound_ * magnitude) {
     best.mode = Mode::kChangedSignZeroResidual;
     best.recovered_log = previous_log_;
     best.recovered_value = best.sign ? -std::abs(previous_value_) : std::abs(previous_value_);
-    best.bits = 4;
+    best.bits = 6;
     return best;
   }
 
   best.integer_choice = AdaptiveQtCodec::SelectAdaptiveRiceCodec(adaptive_state_);
   int64_t q = 0;
+  double target_log = 0;
   double recovered_log = 0;
-  double recovered_magnitude = 0;
-  if (!QuantizeLog(value, previous_log_, log_max_diff_, inverse_log_step_, lower_log_error_bound_,
-                   upper_log_error_bound_, &q, &recovered_log, &recovered_magnitude)) {
+  if (!QuantizeLog(magnitude, previous_log_, log_max_diff_, inverse_log_step_,
+                   lower_log_error_bound_, upper_log_error_bound_, &q, &target_log,
+                   &recovered_log)) {
     return best;
   }
+  best.original_log = target_log;
+  best.has_original_log = true;
 
   const bool changed_sign = best.sign != previous_sign_;
   if (q == 0) return best;
 
-  const uint64_t mapped =
-      q < 0 ? static_cast<uint64_t>(-q) : static_cast<uint64_t>(q);
+  const bool positive = q > 0;
+  const uint64_t mapped = positive ? static_cast<uint64_t>(q) : static_cast<uint64_t>(-q);
   best.mapped = mapped;
   best.recovered_log = recovered_log;
-  best.recovered_value = best.sign ? -recovered_magnitude : recovered_magnitude;
+  best.lengths = AdaptiveQtCodec::CalculateCappedRiceCodeLengths(
+      mapped, best.integer_choice.rice_parameter, kRiceQuotientCap);
 
-  uint64_t residual_bits;
-  if (best.integer_choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-    residual_bits = AdaptiveQtCodec::AdaptiveRiceLength(mapped, best.integer_choice.rice_parameter);
-  } else {
-    residual_bits = AdaptiveQtCodec::EncodedLength(
-        mapped, best.integer_choice.codec, best.integer_choice.rice_parameter);
-  }
-  const uint64_t prefix_bits = changed_sign ? 5 : 3;
+  const uint64_t residual_bits = SelectedLength(best.lengths, best.integer_choice.codec);
+  const uint64_t prefix_bits = ResidualPrefixLength(changed_sign, positive);
   if (prefix_bits + residual_bits < best.bits) {
+    const double recovered_magnitude = std::exp(recovered_log);
+    if (!std::isfinite(recovered_magnitude)) return best;
     if (changed_sign) {
       best.mode =
-          q > 0 ? Mode::kChangedSignPositiveResidual : Mode::kChangedSignNegativeResidual;
+          positive ? Mode::kChangedSignPositiveResidual : Mode::kChangedSignNegativeResidual;
     } else {
-      best.mode = q > 0 ? Mode::kSameSignPositiveResidual : Mode::kSameSignNegativeResidual;
+      best.mode = positive ? Mode::kSameSignPositiveResidual : Mode::kSameSignNegativeResidual;
     }
+    best.recovered_value = best.sign ? -recovered_magnitude : recovered_magnitude;
     best.bits = prefix_bits + residual_bits;
   }
   return best;
@@ -150,17 +174,8 @@ LogSerfQtCompressor::Choice LogSerfQtCompressor::Choose(double value) const {
 
 void LogSerfQtCompressor::WriteResidual(const Choice &choice) {
   if (choice.integer_choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-    if (AdaptiveQtCodec::ShouldUseRiceDeltaFallback(
-            choice.mapped, choice.integer_choice.rice_parameter)) {
-      compressed_size_in_bits_ += output_->WriteInt(2, 2);
-      compressed_size_in_bits_ += AdaptiveQtCodec::EncodeMapped(
-          choice.mapped, AdaptiveQtCodec::IntegerCodec::kDelta, 0, output_.get());
-    } else {
-      compressed_size_in_bits_ += output_->WriteBit(false);
-      compressed_size_in_bits_ += AdaptiveQtCodec::EncodeMapped(
-          choice.mapped, choice.integer_choice.codec, choice.integer_choice.rice_parameter,
-          output_.get());
-    }
+    compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRice(
+        choice.mapped, choice.integer_choice.rice_parameter, kRiceQuotientCap, output_.get());
     return;
   }
   compressed_size_in_bits_ += AdaptiveQtCodec::EncodeMapped(
@@ -173,29 +188,29 @@ void LogSerfQtCompressor::WriteChoice(const Choice &choice, double original) {
       compressed_size_in_bits_ += output_->WriteBit(false);
       return;
     case Mode::kSameSignPositiveResidual:
-      compressed_size_in_bits_ += output_->WriteInt(4, 3);
+    case Mode::kSameSignNegativeResidual: {
+      const bool positive = choice.mode == Mode::kSameSignPositiveResidual;
+      compressed_size_in_bits_ +=
+          positive ? output_->WriteInt(6, 3) : output_->WriteInt(2, 2);
       WriteResidual(choice);
       return;
-    case Mode::kSameSignNegativeResidual:
-      compressed_size_in_bits_ += output_->WriteInt(5, 3);
-      WriteResidual(choice);
-      return;
+    }
     case Mode::kChangedSignZeroResidual:
-      compressed_size_in_bits_ += output_->WriteInt(12, 4);
+      compressed_size_in_bits_ += output_->WriteInt(62, 6);
       return;
     case Mode::kChangedSignPositiveResidual:
-      compressed_size_in_bits_ += output_->WriteInt(26, 5);
+    case Mode::kChangedSignNegativeResidual: {
+      const bool positive = choice.mode == Mode::kChangedSignPositiveResidual;
+      compressed_size_in_bits_ +=
+          positive ? output_->WriteInt(30, 5) : output_->WriteInt(14, 4);
       WriteResidual(choice);
       return;
-    case Mode::kChangedSignNegativeResidual:
-      compressed_size_in_bits_ += output_->WriteInt(27, 5);
-      WriteResidual(choice);
-      return;
+    }
     case Mode::kZero:
-      compressed_size_in_bits_ += output_->WriteInt(14, 4);
+      compressed_size_in_bits_ += output_->WriteInt(126, 7);
       return;
     case Mode::kRaw:
-      compressed_size_in_bits_ += output_->WriteInt(15, 4);
+      compressed_size_in_bits_ += output_->WriteInt(127, 7);
       compressed_size_in_bits_ += output_->WriteLong(Double::DoubleToLongBits(original), 64);
       return;
   }
@@ -204,7 +219,7 @@ void LogSerfQtCompressor::WriteChoice(const Choice &choice, double original) {
 void LogSerfQtCompressor::UpdateState(const Choice &choice, double original) {
   if (choice.mode == Mode::kRaw) {
     if (std::isfinite(original) && original != 0) {
-      previous_log_ = std::log(std::abs(original));
+      previous_log_ = choice.has_original_log ? choice.original_log : std::log(std::abs(original));
       previous_value_ = original;
       previous_sign_ = std::signbit(original);
     }
@@ -215,8 +230,7 @@ void LogSerfQtCompressor::UpdateState(const Choice &choice, double original) {
   previous_value_ = choice.recovered_value;
   previous_sign_ = choice.sign;
   if (choice.mode != Mode::kChangedSignZeroResidual) {
-    AdaptiveQtCodec::UpdateAdaptiveRiceState(
-        choice.mapped, choice.integer_choice.rice_parameter, &adaptive_state_);
+    AdaptiveQtCodec::UpdateAdaptiveRiceState(choice.mapped, choice.lengths, &adaptive_state_);
   }
 }
 

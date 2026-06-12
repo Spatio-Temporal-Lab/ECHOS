@@ -241,10 +241,13 @@ value and decoder-synchronized historical state. They do not inspect or buffer f
 Reuse the same compressor/decompressor objects for one dataset stream, and construct new objects
 when starting another independent dataset.
 
-`AdaptiveSerfQt-Rice` compares Gamma, Delta, and one adaptive Rice coder using integer costs that
-decay by `cost -= cost >> 4` before each update. Its Rice parameter is inferred from the synchronized
-decayed residual magnitude, so only three coding costs are maintained. Rice values use prefix `0`;
-unexpectedly large residuals use prefix `10` and Delta fallback, while prefix `11` stores a raw value.
+`AdaptiveSerfQt-Rice` compares Gamma, Delta, legacy Rice, and bounded Rice formats using integer
+costs that decay by `cost -= cost >> 4` before each update. Its Rice parameter is inferred from the
+synchronized decayed residual magnitude. The bounded format directly writes quotients below 32;
+at the cap, one escape bit selects Delta residual fallback or a raw double. Compressor and
+decompressor implicitly choose between the two Rice formats from synchronized historical costs, so
+no format flag is stored. Quantization uses a double-precision fast path and falls back to
+long double only for extreme or numerically ambiguous values.
 
 Its block metadata is also stream-adaptive. Every block starts with two flags indicating whether its
 block size and error bound differ from the previous block. The first block writes both fields; an
@@ -257,9 +260,15 @@ the original value sign changed
 and whether the log-quantization residual is positive, negative, or zero. The implicit
 Gamma/Delta/Rice coder therefore receives only the positive residual magnitude; positive and
 negative zero share one short code and are both reconstructed as canonical positive zero.
+The mode prefix is ordered by measured streaming frequency: repeat values use one bit, same-sign
+negative and positive residuals use two and three bits, and rarer sign-change/zero/raw modes use
+progressively longer codes.
+Selected Rice values use a bounded quotient with cap 16: common values omit the old Rice prefix,
+while a quotient reaching the cap implicitly switches to Delta.
 It caches the last recovered value so repeat values bypass logarithms, quantization, exponentiation,
-and adaptive-codec selection. Non-repeat values use a precomputed inverse quantization step and
-log-domain error validation; unary Gamma/Rice prefixes are decoded in word-sized chunks.
+and adaptive-codec selection. Non-repeat values use a precomputed inverse quantization step,
+cached code lengths, and log-domain error validation; unary Gamma/Rice prefixes are decoded in
+word-sized chunks.
 
 Build and run their standalone correctness and benchmark programs:
 

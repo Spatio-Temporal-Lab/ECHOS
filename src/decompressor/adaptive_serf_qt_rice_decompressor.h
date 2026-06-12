@@ -16,6 +16,7 @@ class AdaptiveSerfQtRiceDecompressor {
   bool metadata_initialized_ = false;
   int block_size_ = 0;
   double max_diff_ = 0;
+  double quantization_step_ = 0;
 };
 
 #endif  // ADAPTIVE_SERF_QT_RICE_DECOMPRESSOR_H_

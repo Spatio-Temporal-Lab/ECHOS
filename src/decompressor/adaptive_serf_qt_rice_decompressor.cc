@@ -17,7 +17,10 @@ std::vector<double> AdaptiveSerfQtRiceDecompressor::Decompress(const Array<uint8
     throw std::runtime_error("First Adaptive Serf-QT-Rice block must contain full metadata");
   }
   if (block_size_changed) block_size_ = input.ReadInt(16);
-  if (max_diff_changed) max_diff_ = Double::LongBitsToDouble(input.ReadLong(64));
+  if (max_diff_changed) {
+    max_diff_ = Double::LongBitsToDouble(input.ReadLong(64));
+    quantization_step_ = 2 * max_diff_;
+  }
   if (block_size_ <= 0 || block_size_ > 65535 || !std::isfinite(max_diff_) || max_diff_ <= 0) {
     throw std::runtime_error("Invalid Adaptive Serf-QT-Rice metadata");
   }
@@ -28,12 +31,15 @@ std::vector<double> AdaptiveSerfQtRiceDecompressor::Decompress(const Array<uint8
 
   for (int index = 0; index < block_size_; ++index) {
     const AdaptiveQtCodec::AdaptiveRiceChoice choice =
-        AdaptiveQtCodec::SelectAdaptiveRiceCodec(adaptive_state_);
+        AdaptiveQtCodec::SelectAdaptiveRiceCodecAndFormat(adaptive_state_);
 
     bool raw = false;
     uint64_t mapped = 1;
     if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-      if (!input.ReadBit()) {
+      if (choice.capped_rice) {
+        mapped =
+            AdaptiveQtCodec::DecodeCappedRiceWithRaw(choice.rice_parameter, &raw, &input);
+      } else if (!input.ReadBit()) {
         mapped = AdaptiveQtCodec::DecodeMapped(choice.codec, choice.rice_parameter, &input);
       } else if (!input.ReadBit()) {
         mapped = AdaptiveQtCodec::DecodeMapped(AdaptiveQtCodec::IntegerCodec::kDelta, 0, &input);
@@ -50,8 +56,10 @@ std::vector<double> AdaptiveSerfQtRiceDecompressor::Decompress(const Array<uint8
       value = Double::LongBitsToDouble(input.ReadLong(64));
     } else {
       const int64_t q = AdaptiveQtCodec::ZigZagDecode(mapped - 1);
-      value = previous_ + 2 * max_diff_ * static_cast<double>(q);
-      AdaptiveQtCodec::UpdateAdaptiveRiceState(mapped, choice.rice_parameter, &adaptive_state_);
+      value = previous_ + quantization_step_ * static_cast<double>(q);
+      const AdaptiveQtCodec::AdaptiveRiceFormatLengths lengths =
+          AdaptiveQtCodec::CalculateAdaptiveRiceFormatLengths(mapped, choice.rice_parameter);
+      AdaptiveQtCodec::UpdateAdaptiveRiceFormatState(mapped, lengths, &adaptive_state_);
     }
     result.push_back(value);
     previous_ = std::isfinite(value) ? value : 2;

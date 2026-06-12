@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
   const std::filesystem::path dataset_dir =
       argc > 1 ? std::filesystem::path(argv[1]) : std::filesystem::path("test/data_set");
   const double absolute_bound = argc > 2 ? std::stod(argv[2]) : kAbsoluteError;
+  const double relative_bound = argc > 3 ? std::stod(argv[3]) : kRelativeError;
   std::cout << std::setprecision(10);
   std::cout << "Dataset,Method,Values,CompressionRatio,CompressionMs,DecompressionMs,MaxError,Valid\n";
   const std::unordered_map<std::string, int> adjust_digits = {
@@ -149,9 +150,9 @@ int main(int argc, char **argv) {
       return std::abs(original - recovered) / std::abs(original);
     };
     Print(dataset, "LogSerfQt",
-          Run<LogSerfQtCompressor, LogSerfQtDecompressor>(values, kRelativeError, relative_error));
+          Run<LogSerfQtCompressor, LogSerfQtDecompressor>(values, relative_bound, relative_error));
     Print(dataset, "SerfXOR-Relative",
-          RunSerfXorRelative(values, kRelativeError, adjust_digits.at(dataset)));
+          RunSerfXorRelative(values, relative_bound, adjust_digits.at(dataset)));
   }
   return 0;
 }

@@ -17,9 +17,80 @@
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
 #include "decompressor/serf_qt_decompressor.h"
+#include "utils/adaptive_qt_codec.h"
 #include "utils/double.h"
+#include "utils/input_bit_stream.h"
+#include "utils/output_bit_stream.h"
 
 namespace {
+
+bool ValidateCappedRice() {
+  constexpr uint32_t kParameter = 3;
+  constexpr uint32_t kQuotientCap = 16;
+  const std::vector<uint64_t> mapped_values = {1, 8, 15 * 8 + 1, 16 * 8 + 1, 10000};
+  OutputBitStream output(128);
+  uint64_t bits = 0;
+  for (uint64_t mapped : mapped_values) {
+    const uint64_t written =
+        AdaptiveQtCodec::EncodeCappedRice(mapped, kParameter, kQuotientCap, &output);
+    if (written != AdaptiveQtCodec::CappedRiceLength(mapped, kParameter, kQuotientCap)) {
+      return false;
+    }
+    bits += written;
+  }
+  output.Flush();
+
+  InputBitStream input;
+  input.SetBuffer(output.GetBuffer(static_cast<uint32_t>((bits + 7) / 8)));
+  for (uint64_t expected : mapped_values) {
+    if (AdaptiveQtCodec::DecodeCappedRice(kParameter, kQuotientCap, &input) != expected) {
+      return false;
+    }
+  }
+
+  const std::vector<uint64_t> raw_cap_values = {
+      1, (AdaptiveQtCodec::kAdaptiveRiceFormatQuotientCap - 1) * 8 + 1,
+      AdaptiveQtCodec::kAdaptiveRiceFormatQuotientCap * 8 + 1, 10000};
+  OutputBitStream raw_cap_output(128);
+  bits = 0;
+  for (uint64_t mapped : raw_cap_values) {
+    const uint64_t written =
+        AdaptiveQtCodec::EncodeCappedRiceWithRaw(mapped, kParameter, &raw_cap_output);
+    if (written != AdaptiveQtCodec::CappedRiceWithRawLength(
+                       mapped, kParameter, AdaptiveQtCodec::kAdaptiveRiceFormatQuotientCap)) {
+      return false;
+    }
+    bits += written;
+  }
+  bits += AdaptiveQtCodec::WriteCappedRiceRaw(&raw_cap_output);
+  raw_cap_output.Flush();
+
+  InputBitStream raw_cap_input;
+  raw_cap_input.SetBuffer(raw_cap_output.GetBuffer(static_cast<uint32_t>((bits + 7) / 8)));
+  for (uint64_t expected : raw_cap_values) {
+    bool raw = false;
+    if (AdaptiveQtCodec::DecodeCappedRiceWithRaw(kParameter, &raw, &raw_cap_input) != expected ||
+        raw) {
+      return false;
+    }
+  }
+  bool raw = false;
+  AdaptiveQtCodec::DecodeCappedRiceWithRaw(kParameter, &raw, &raw_cap_input);
+  if (!raw) return false;
+
+  AdaptiveQtCodec::AdaptiveRiceState state;
+  state.delta_cost = 100;
+  state.gamma_cost = 100;
+  state.rice_cost = 50;
+  state.capped_rice_cost = 10;
+  AdaptiveQtCodec::AdaptiveRiceChoice choice =
+      AdaptiveQtCodec::SelectAdaptiveRiceCodecAndFormat(state);
+  if (choice.codec != AdaptiveQtCodec::IntegerCodec::kRice || !choice.capped_rice) return false;
+  state.rice_cost = 5;
+  choice = AdaptiveQtCodec::SelectAdaptiveRiceCodecAndFormat(state);
+  if (choice.codec != AdaptiveQtCodec::IntegerCodec::kRice || choice.capped_rice) return false;
+  return true;
+}
 
 template <typename Compressor, typename Decompressor>
 std::vector<double> RoundTripBlocks(const std::vector<double> &original, int block_size,
@@ -201,7 +272,7 @@ bool ValidateLogMetadata() {
 
   compressor.SetBlockConfig(3, 1.0E-2);
   const auto zeros = encode_block({0.0, -0.0, 0.0}, 1.0E-2);
-  if (!zeros.first || zeros.second > 2 + 16 + 3 * 4) return false;
+  if (!zeros.first || zeros.second > 2 + 16 + 3 * 7) return false;
 
   compressor.SetBlockConfig(3, 1.0E-3);
   return encode_block({1.0, -1.0, 1.001}, 1.0E-3).first;
@@ -294,6 +365,7 @@ bool ValidateRealDatasets(const std::filesystem::path &dataset_dir) {
 int main(int argc, char **argv) {
   const std::filesystem::path dataset_dir =
       argc > 1 ? std::filesystem::path(argv[1]) : std::filesystem::path("test/data_set");
+  const bool capped_rice_valid = ValidateCappedRice();
   const bool serf_qt_valid = ValidateSerfQtContinuity();
   const bool adaptive_valid = ValidateAdaptive();
   const bool adaptive_rice_valid = ValidateAdaptiveRice();
@@ -301,6 +373,7 @@ int main(int argc, char **argv) {
   const bool log_valid = ValidateLog();
   const bool log_metadata_valid = ValidateLogMetadata();
   const bool real_datasets_valid = ValidateRealDatasets(dataset_dir);
+  std::cout << "CappedRice=" << (capped_rice_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "SerfQtContinuousBlocks=" << (serf_qt_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "AdaptiveSerfQt=" << (adaptive_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "AdaptiveSerfQt-Rice=" << (adaptive_rice_valid ? "PASS" : "FAIL") << '\n';
@@ -308,8 +381,9 @@ int main(int argc, char **argv) {
   std::cout << "LogSerfQt=" << (log_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "LogSerfQt-Metadata=" << (log_metadata_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "RealDatasetsAllBounds=" << (real_datasets_valid ? "PASS" : "FAIL") << '\n';
-  return serf_qt_valid && adaptive_valid && adaptive_rice_valid && adaptive_rice_metadata_valid &&
-                 log_valid && log_metadata_valid && real_datasets_valid
+  return capped_rice_valid && serf_qt_valid && adaptive_valid && adaptive_rice_valid &&
+                 adaptive_rice_metadata_valid && log_valid && log_metadata_valid &&
+                 real_datasets_valid
              ? 0
              : 1;
 }
