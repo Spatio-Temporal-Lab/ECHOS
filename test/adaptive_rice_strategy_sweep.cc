@@ -17,7 +17,7 @@
 
 namespace {
 
-constexpr uint32_t kMaxK = AdaptiveQtCodec::kAdaptiveRiceMaxParameter;
+constexpr uint32_t kMaxK = AdaptiveQtCodec::kAdaptiveRiceMagnitudeBits;
 
 enum class Strategy {
   kCurrent,
@@ -116,16 +116,15 @@ struct Result {
 
 uint32_t CurrentEstimate(const State &state) {
   if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
-  const int estimate =
-      static_cast<int>(AdaptiveQtCodec::FloorLog2(state.magnitude_sum)) -
-      static_cast<int>(AdaptiveQtCodec::FloorLog2(state.sample_count));
-  return static_cast<uint32_t>(std::clamp(estimate, 0, static_cast<int>(kMaxK)));
+  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(state.magnitude_sum);
+  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(state.sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
 }
 
 uint32_t ExactMeanEstimate(const State &state) {
   if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
   const uint64_t mean = state.magnitude_sum / state.sample_count;
-  return mean == 0 ? 0 : std::min(AdaptiveQtCodec::FloorLog2(mean), kMaxK);
+  return mean == 0 ? 0 : AdaptiveQtCodec::FloorLog2(mean);
 }
 
 uint32_t EstimateK(const State &state, Strategy strategy) {

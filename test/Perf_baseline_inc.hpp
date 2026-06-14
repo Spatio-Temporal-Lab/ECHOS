@@ -12,6 +12,8 @@
 #include "../src/decompressor/adaptive_serf_qt_decompressor.h"
 #include "../src/compressor/adaptive_serf_qt_rice_compressor.h"
 #include "../src/decompressor/adaptive_serf_qt_rice_decompressor.h"
+#include "../src/compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
+#include "../src/decompressor/adaptive_serf_qt_rice_bounded16_decompressor.h"
 #include "../src/compressor/log_serf_qt_compressor.h"
 #include "../src/decompressor/log_serf_qt_decompressor.h"
 

@@ -150,6 +150,7 @@ src
 - **`serf_qt_compressor.`**: Standard *Serf-Qt* compression implementation.
 - **`adaptive_serf_qt_compressor`**: Strictly streaming Serf-Qt variant that selects Elias Gamma or Delta coding from synchronized historical coding costs and uses a finite-value-safe escape code.
 - **`adaptive_serf_qt_rice_compressor`**: Strictly streaming Serf-Qt variant that implicitly selects Gamma, Delta, or Rice coding from deterministically decayed historical costs.
+- **`adaptive_serf_qt_rice_bounded16_compressor`**: Speed-oriented streaming baseline using only Gamma, Delta, and bounded Rice with quotient cap 16.
 - **`log_serf_qt_compressor`**: Strictly streaming logarithmic-domain Serf-Qt variant with point-wise relative error guarantees.
 - **`serf_xor_compressor`**: Standard *Serf-XOR* compression implementation.
 - **`serf_xor_compressor_no_fast_search`**: *Serf-XOR* compressor without fast search optimizations.
@@ -243,7 +244,9 @@ when starting another independent dataset.
 
 `AdaptiveSerfQt-Rice` compares Gamma, Delta, legacy Rice, and bounded Rice formats using integer
 costs that decay by `cost -= cost >> 4` before each update. Its Rice parameter is inferred from the
-synchronized decayed residual magnitude. The bounded format directly writes quotients below 32;
+synchronized decayed residual magnitude without an explicit parameter limit. Historical residual
+magnitudes are capped at `2^20` for robust adaptation, which naturally keeps the inferred parameter
+at or below 20. The bounded format directly writes quotients below 32;
 at the cap, one escape bit selects Delta residual fallback or a raw double. Compressor and
 decompressor implicitly choose between the two Rice formats from synchronized historical costs, so
 no format flag is stored. Quantization uses a double-precision fast path and falls back to
@@ -254,8 +257,14 @@ block size and error bound differ from the previous block. The first block write
 unchanged later block writes only the two zero flags. `SetBlockConfig` may change either field only
 at a block boundary. No checkpoints or prediction-state snapshots are written.
 
-`LogSerfQt` uses the same synchronized `cost -= cost >> 4` historical-cost selection and
-stream-adaptive metadata in the logarithmic domain. Its value-level prefix jointly carries whether
+`AdaptiveSerfQt-Rice-Bounded16` is a separate speed-oriented baseline. It preserves the same
+quantization, stream-adaptive metadata, cross-block prediction state, decayed historical costs, and
+natural Rice-parameter inference, but removes legacy Rice and uses one bounded Rice format with
+quotient cap 16. Its bitstream is distinct from `AdaptiveSerfQt-Rice`.
+
+`LogSerfQt` uses the same synchronized `cost -= cost >> 4` historical-cost selection, naturally
+bounded Rice-parameter inference, and stream-adaptive metadata in the logarithmic domain. Its
+value-level prefix jointly carries whether
 the original value sign changed
 and whether the log-quantization residual is positive, negative, or zero. The implicit
 Gamma/Delta/Rice coder therefore receives only the positive residual magnitude; positive and

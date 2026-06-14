@@ -715,6 +715,42 @@ void PerfAdaptiveSerfQtRice(std::ifstream &data_set_input_stream_ref, double max
   ResetFileStream(data_set_input_stream_ref);
 }
 
+void PerfAdaptiveSerfQtRiceBounded16(std::ifstream &data_set_input_stream_ref, double max_diff,
+                                     int block_size, const std::string &data_set,
+                                     ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+  AdaptiveSerfQtRiceBounded16Compressor compressor(block_size, max_diff);
+  AdaptiveSerfQtRiceBounded16Decompressor decompressor;
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    const auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    const auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    const Array<uint8_t> compression_output = compressor.compressed_bytes();
+    const auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    const auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(
+      ExprConf("AdaptiveSerfQt-Rice-Bounded16", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
 void PerfLogSerfQtRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
                       const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -2259,6 +2295,8 @@ TEST(Perf, Overall) {
     PerfSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfAdaptiveSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+    PerfAdaptiveSerfQtRiceBounded16(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set,
+                                   expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_MACHETE
     PerfMachete(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
@@ -2330,6 +2368,8 @@ TEST(Perf, ParamAbsMaxDiff) {
       PerfSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfAdaptiveSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfAdaptiveSerfQtRice(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
+      PerfAdaptiveSerfQtRiceBounded16(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff,
+                                     data_set, expr_table_abs_diff);
       PerfSimPiece(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSZ2(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfMachete(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
@@ -2364,6 +2404,11 @@ TEST(Perf, ParamBlockSize) {
                              block_size,
                              data_set,
                              expr_table_block_size);
+      PerfAdaptiveSerfQtRiceBounded16(data_input_stream,
+                                      kAbsMaxDiffParamBlockSize,
+                                      block_size,
+                                      data_set,
+                                      expr_table_block_size);
       PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
@@ -2579,6 +2624,8 @@ TEST(Perf, TSBS) {
     PerfSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfAdaptiveSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
+    PerfAdaptiveSerfQtRiceBounded16(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set,
+                                   expr_table_tsbs);
     PerfMachete(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSZ2(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSimPiece(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);

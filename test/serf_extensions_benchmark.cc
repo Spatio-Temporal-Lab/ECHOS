@@ -11,11 +11,13 @@
 
 #include "compressor/adaptive_serf_qt_compressor.h"
 #include "compressor/adaptive_serf_qt_rice_compressor.h"
+#include "compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
 #include "compressor/log_serf_qt_compressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "compressor/serf_xor_compressor_rel.h"
 #include "decompressor/adaptive_serf_qt_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
+#include "decompressor/adaptive_serf_qt_rice_bounded16_decompressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
 #include "decompressor/serf_qt_decompressor.h"
 #include "decompressor/serf_xor_decompressor.h"
@@ -143,6 +145,9 @@ int main(int argc, char **argv) {
           Run<AdaptiveSerfQtCompressor, AdaptiveSerfQtDecompressor>(values, absolute_bound, absolute_error));
     Print(dataset, "AdaptiveSerfQt-Rice",
           Run<AdaptiveSerfQtRiceCompressor, AdaptiveSerfQtRiceDecompressor>(
+              values, absolute_bound, absolute_error));
+    Print(dataset, "AdaptiveSerfQt-Rice-Bounded16",
+          Run<AdaptiveSerfQtRiceBounded16Compressor, AdaptiveSerfQtRiceBounded16Decompressor>(
               values, absolute_bound, absolute_error));
 
     const auto relative_error = [](double original, double recovered) {

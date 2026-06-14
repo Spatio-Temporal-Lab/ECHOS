@@ -54,11 +54,9 @@ bool Quantize(double value, double prediction, double max_diff, int64_t *q, doub
 
 uint32_t EstimateRiceParameter(const RiceState &state) {
   if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
-  const int estimate =
-      static_cast<int>(AdaptiveQtCodec::FloorLog2(state.magnitude_sum)) -
-      static_cast<int>(AdaptiveQtCodec::FloorLog2(state.sample_count));
-  return static_cast<uint32_t>(
-      std::clamp(estimate, 0, static_cast<int>(AdaptiveQtCodec::kAdaptiveRiceMaxParameter)));
+  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(state.magnitude_sum);
+  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(state.sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
 }
 
 void UpdateRiceState(uint64_t mapped, RiceState *state) {

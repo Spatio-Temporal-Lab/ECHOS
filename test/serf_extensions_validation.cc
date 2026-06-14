@@ -11,10 +11,12 @@
 #include "Perf_file_utils.hpp"
 #include "compressor/adaptive_serf_qt_compressor.h"
 #include "compressor/adaptive_serf_qt_rice_compressor.h"
+#include "compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
 #include "compressor/log_serf_qt_compressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "decompressor/adaptive_serf_qt_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
+#include "decompressor/adaptive_serf_qt_rice_bounded16_decompressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
 #include "decompressor/serf_qt_decompressor.h"
 #include "utils/adaptive_qt_codec.h"
@@ -90,6 +92,21 @@ bool ValidateCappedRice() {
   choice = AdaptiveQtCodec::SelectAdaptiveRiceCodecAndFormat(state);
   if (choice.codec != AdaptiveQtCodec::IntegerCodec::kRice || choice.capped_rice) return false;
   return true;
+}
+
+bool ValidateNaturalRiceParameter() {
+  AdaptiveQtCodec::AdaptiveRiceState state;
+  state.magnitude_sum = 1ULL << 13;
+  state.sample_count = 1;
+  if (AdaptiveQtCodec::EstimateRiceParameter(state) != 13) return false;
+  state.magnitude_sum = AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap;
+  if (AdaptiveQtCodec::EstimateRiceParameter(state) !=
+      AdaptiveQtCodec::kAdaptiveRiceMagnitudeBits) {
+    return false;
+  }
+  state.magnitude_sum = 1;
+  state.sample_count = 16;
+  return AdaptiveQtCodec::EstimateRiceParameter(state) == 0;
 }
 
 template <typename Compressor, typename Decompressor>
@@ -179,6 +196,31 @@ bool ValidateAdaptiveRice() {
   return true;
 }
 
+bool ValidateAdaptiveRiceBounded16() {
+  const double max_diff = 1.0E-6;
+  const std::vector<double> original = {
+      2.0, 2.0, 2.000001, 2.000002, 2.000003, -1000.123456,
+      -1000.123455, 1.0E12, 1.0E12 + 0.25, -1.0E12, 0.0,
+      std::numeric_limits<double>::max(), -std::numeric_limits<double>::max(),
+      std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::quiet_NaN()};
+
+  const std::vector<double> recovered =
+      RoundTripBlocks<AdaptiveSerfQtRiceBounded16Compressor,
+                      AdaptiveSerfQtRiceBounded16Decompressor>(original, 8, max_diff);
+  if (recovered.size() != original.size()) return false;
+  for (size_t i = 0; i < original.size(); ++i) {
+    if (std::isnan(original[i])) {
+      if (!std::isnan(recovered[i])) return false;
+    } else if (std::isinf(original[i])) {
+      if (original[i] != recovered[i]) return false;
+    } else if (std::abs(original[i] - recovered[i]) > max_diff) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ValidateAdaptiveRiceMetadata() {
   AdaptiveSerfQtRiceCompressor compressor(4, 1.0E-3);
   AdaptiveSerfQtRiceDecompressor decompressor;
@@ -208,6 +250,32 @@ bool ValidateAdaptiveRiceMetadata() {
   compressor.SetBlockConfig(3, 1.0E-4);
   const auto changed_error = encode_block({2.0, 2.0, 2.0}, 1.0E-4);
   return changed_error.first;
+}
+
+bool ValidateAdaptiveRiceBounded16Metadata() {
+  AdaptiveSerfQtRiceBounded16Compressor compressor(4, 1.0E-3);
+  AdaptiveSerfQtRiceBounded16Decompressor decompressor;
+  const auto encode_block = [&](const std::vector<double> &values, double error_bound) {
+    for (double value : values) compressor.AddValue(value);
+    compressor.Close();
+    const long bits = compressor.get_compressed_size_in_bits();
+    const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+    if (values.size() != recovered.size()) return std::pair<bool, long>{false, bits};
+    for (size_t i = 0; i < values.size(); ++i) {
+      if (std::abs(values[i] - recovered[i]) > error_bound) {
+        return std::pair<bool, long>{false, bits};
+      }
+    }
+    return std::pair<bool, long>{true, bits};
+  };
+
+  const auto first = encode_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
+  const auto unchanged = encode_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
+  if (!first.first || !unchanged.first || first.second - unchanged.second < 70) return false;
+  compressor.SetBlockConfig(3, 1.0E-3);
+  if (!encode_block({2.0, 2.0, 2.0}, 1.0E-3).first) return false;
+  compressor.SetBlockConfig(3, 1.0E-4);
+  return encode_block({2.0, 2.0, 2.0}, 1.0E-4).first;
 }
 
 bool ValidateLog() {
@@ -307,6 +375,26 @@ bool ValidateRealDatasets(const std::filesystem::path &dataset_dir) {
       }
       ResetFileStream(input);
 
+      AdaptiveSerfQtRiceBounded16Compressor bounded16_compressor(kBlockSizeOverall, max_diff);
+      AdaptiveSerfQtRiceBounded16Decompressor bounded16_decompressor;
+      block_index = 0;
+      while ((original = ReadBlock(input, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        for (double value : original) bounded16_compressor.AddValue(value);
+        bounded16_compressor.Close();
+        const std::vector<double> recovered =
+            bounded16_decompressor.Decompress(bounded16_compressor.compressed_bytes());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          if (std::abs(original[i] - recovered[i]) > max_diff) {
+            std::cerr << "AdaptiveSerfQt-Rice-Bounded16 failed: " << data_set
+                      << " max_diff=" << max_diff
+                      << " index=" << block_index * kBlockSizeOverall + i << '\n';
+            return false;
+          }
+        }
+        ++block_index;
+      }
+      ResetFileStream(input);
+
       AdaptiveSerfQtRiceCompressor rice_compressor(kBlockSizeOverall, max_diff);
       AdaptiveSerfQtRiceDecompressor rice_decompressor;
       block_index = 0;
@@ -366,23 +454,34 @@ int main(int argc, char **argv) {
   const std::filesystem::path dataset_dir =
       argc > 1 ? std::filesystem::path(argv[1]) : std::filesystem::path("test/data_set");
   const bool capped_rice_valid = ValidateCappedRice();
+  const bool natural_rice_parameter_valid = ValidateNaturalRiceParameter();
   const bool serf_qt_valid = ValidateSerfQtContinuity();
   const bool adaptive_valid = ValidateAdaptive();
   const bool adaptive_rice_valid = ValidateAdaptiveRice();
+  const bool adaptive_rice_bounded16_valid = ValidateAdaptiveRiceBounded16();
   const bool adaptive_rice_metadata_valid = ValidateAdaptiveRiceMetadata();
+  const bool adaptive_rice_bounded16_metadata_valid = ValidateAdaptiveRiceBounded16Metadata();
   const bool log_valid = ValidateLog();
   const bool log_metadata_valid = ValidateLogMetadata();
   const bool real_datasets_valid = ValidateRealDatasets(dataset_dir);
   std::cout << "CappedRice=" << (capped_rice_valid ? "PASS" : "FAIL") << '\n';
+  std::cout << "NaturalRiceParameter=" << (natural_rice_parameter_valid ? "PASS" : "FAIL")
+            << '\n';
   std::cout << "SerfQtContinuousBlocks=" << (serf_qt_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "AdaptiveSerfQt=" << (adaptive_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "AdaptiveSerfQt-Rice=" << (adaptive_rice_valid ? "PASS" : "FAIL") << '\n';
+  std::cout << "AdaptiveSerfQt-Rice-Bounded16="
+            << (adaptive_rice_bounded16_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "AdaptiveSerfQt-Rice-Metadata=" << (adaptive_rice_metadata_valid ? "PASS" : "FAIL") << '\n';
+  std::cout << "AdaptiveSerfQt-Rice-Bounded16-Metadata="
+            << (adaptive_rice_bounded16_metadata_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "LogSerfQt=" << (log_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "LogSerfQt-Metadata=" << (log_metadata_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "RealDatasetsAllBounds=" << (real_datasets_valid ? "PASS" : "FAIL") << '\n';
-  return capped_rice_valid && serf_qt_valid && adaptive_valid && adaptive_rice_valid &&
-                 adaptive_rice_metadata_valid && log_valid && log_metadata_valid &&
+  return capped_rice_valid && natural_rice_parameter_valid && serf_qt_valid && adaptive_valid &&
+                 adaptive_rice_valid &&
+                 adaptive_rice_bounded16_valid && adaptive_rice_metadata_valid &&
+                 adaptive_rice_bounded16_metadata_valid && log_valid && log_metadata_valid &&
                  real_datasets_valid
              ? 0
              : 1;
