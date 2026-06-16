@@ -113,7 +113,8 @@ LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
     return best;
   }
 
-  best.rice_parameter = AdaptiveQtCodec::EstimateRiceParameter(adaptive_state_);
+  best.integer_choice = {AdaptiveQtCodec::IntegerCodec::kRice,
+                         AdaptiveQtCodec::EstimateRiceParameter(adaptive_state_), false};
   int64_t q = 0;
   double target_log = 0;
   double recovered_log = 0;
@@ -129,23 +130,23 @@ LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
   const bool changed_sign = best.sign != previous_sign_;
   best.mapped = AdaptiveQtCodec::ZigZagEncode(q);
   best.recovered_log = recovered_log;
-  best.rice_bits = AdaptiveQtCodec::CappedRiceLength(
-      best.mapped, best.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
+  best.lengths = AdaptiveQtCodec::CalculateCappedDeltaRiceCodeLengths(
+      best.mapped, best.integer_choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
   const uint64_t prefix_bits = changed_sign ? 3 : 2;
-  if (prefix_bits + best.rice_bits < best.bits) {
+  if (prefix_bits + best.lengths.rice < best.bits) {
     const double recovered_magnitude = std::exp(recovered_log);
     if (!std::isfinite(recovered_magnitude)) return best;
     best.mode = changed_sign ? Mode::kChangedSignResidual : Mode::kSameSignResidual;
     best.recovered_value = best.sign ? -recovered_magnitude : recovered_magnitude;
-    best.bits = prefix_bits + best.rice_bits;
+    best.bits = prefix_bits + best.lengths.rice;
   }
   return best;
 }
 
 void LogSerfQtZigZagRiceOnly16Compressor::WriteResidual(const Choice &choice) {
   compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRice(
-      choice.mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
-      output_.get());
+      choice.mapped, choice.integer_choice.rice_parameter,
+      AdaptiveQtCodec::kBoundedRiceQuotientCap, output_.get());
 }
 
 void LogSerfQtZigZagRiceOnly16Compressor::WriteChoice(const Choice &choice, double original) {
@@ -188,7 +189,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::UpdateState(const Choice &choice, doub
   previous_value_ = choice.recovered_value;
   previous_sign_ = choice.sign;
   if (choice.mode != Mode::kChangedSignZeroResidual) {
-    AdaptiveQtCodec::UpdateAdaptiveRiceParameterState(choice.mapped, &adaptive_state_);
+    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(choice.mapped, choice.lengths, &adaptive_state_);
   }
 }
 

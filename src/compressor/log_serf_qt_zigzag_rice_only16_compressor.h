@@ -30,16 +30,16 @@ class LogSerfQtZigZagRiceOnly16Compressor {
   };
 
   struct Choice {
-    Mode mode = Mode::kRaw;
-    uint32_t rice_parameter = 0;
-    uint64_t rice_bits = 0;
-    uint64_t mapped = 0;
-    double original_log = 0;
-    double recovered_log = 0;
-    double recovered_value = 0;
-    bool sign = false;
-    bool has_original_log = false;
-    uint64_t bits = 0;
+    Mode mode;
+    AdaptiveQtCodec::AdaptiveRiceChoice integer_choice;
+    AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths;
+    uint64_t mapped;
+    double original_log;
+    double recovered_log;
+    double recovered_value;
+    bool sign;
+    bool has_original_log;
+    uint64_t bits;
   };
 
   void UpdateErrorConfig(double relative_error_bound);
@@ -60,7 +60,7 @@ class LogSerfQtZigZagRiceOnly16Compressor {
   double previous_log_ = 0;
   double previous_value_ = 1;
   bool previous_sign_ = false;
-  AdaptiveQtCodec::AdaptiveRiceParameterState adaptive_state_{};
+  AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
   bool metadata_initialized_ = false;
   int previous_block_size_ = 0;
   uint64_t previous_log_max_diff_bits_ = 0;

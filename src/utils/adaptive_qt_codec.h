@@ -54,11 +54,6 @@ struct AdaptiveDeltaRiceState {
   uint64_t sample_count = 0;
 };
 
-struct AdaptiveRiceParameterState {
-  uint64_t magnitude_sum = 0;
-  uint64_t sample_count = 0;
-};
-
 struct AdaptiveCodeLengths {
   uint64_t gamma;
   uint64_t delta;
@@ -137,13 +132,6 @@ inline uint32_t EstimateRiceParameter(const AdaptiveBoundedRiceState &state) {
 }
 
 inline uint32_t EstimateRiceParameter(const AdaptiveDeltaRiceState &state) {
-  if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
-  const uint32_t magnitude_log = FloorLog2(state.magnitude_sum);
-  const uint32_t sample_log = FloorLog2(state.sample_count);
-  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
-}
-
-inline uint32_t EstimateRiceParameter(const AdaptiveRiceParameterState &state) {
   if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
   const uint32_t magnitude_log = FloorLog2(state.magnitude_sum);
   const uint32_t sample_log = FloorLog2(state.sample_count);
@@ -323,13 +311,6 @@ inline void UpdateAdaptiveDeltaRiceState(uint64_t mapped,
                                          AdaptiveDeltaRiceState *state) {
   state->delta_cost = DecayAndAdd(state->delta_cost, lengths.delta);
   state->rice_cost = DecayAndAdd(state->rice_cost, lengths.rice);
-  state->magnitude_sum =
-      DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
-  state->sample_count = DecayAndAdd(state->sample_count, 1);
-}
-
-inline void UpdateAdaptiveRiceParameterState(uint64_t mapped,
-                                             AdaptiveRiceParameterState *state) {
   state->magnitude_sum =
       DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
   state->sample_count = DecayAndAdd(state->sample_count, 1);

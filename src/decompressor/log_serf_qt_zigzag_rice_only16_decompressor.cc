@@ -88,7 +88,10 @@ std::vector<double> LogSerfQtZigZagRiceOnly16Decompressor::Decompress(
     const double magnitude = std::exp(previous_log_);
     previous_value_ = previous_sign_ ? -magnitude : magnitude;
     result.push_back(previous_value_);
-    AdaptiveQtCodec::UpdateAdaptiveRiceParameterState(mapped, &adaptive_state_);
+    const AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths =
+        AdaptiveQtCodec::CalculateCappedDeltaRiceCodeLengths(
+            mapped, rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
+    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(mapped, lengths, &adaptive_state_);
   }
   return result;
 }
