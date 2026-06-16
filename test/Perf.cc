@@ -789,6 +789,89 @@ void PerfLogSerfQtRel(std::ifstream &data_set_input_stream_ref, double rel_diff,
   table_to_insert.insert(std::make_pair(ExprConf("LogSerfQt_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+
+void PerfLogSerfQtZigZagRel(std::ifstream &data_set_input_stream_ref, double rel_diff,
+                            int block_size, const std::string &data_set,
+                            ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  LogSerfQtZigZagCompressor compressor(block_size, rel_diff);
+  LogSerfQtZigZagDecompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(
+      ExprConf("LogSerfQt-ZigZag_Rel", data_set, block_size, rel_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+
+void PerfLogSerfQtZigZagRiceOnly16Rel(std::ifstream &data_set_input_stream_ref,
+                                      double rel_diff, int block_size,
+                                      const std::string &data_set,
+                                      ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  LogSerfQtZigZagRiceOnly16Compressor compressor(block_size, rel_diff);
+  LogSerfQtZigZagRiceOnly16Decompressor decompressor;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (const auto &value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(
+      ExprConf("LogSerfQt-ZigZag-RiceOnly16_Rel", data_set, block_size, rel_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
 #endif
 
 #ifdef SERF_ENABLE_BASELINE_DEFLATE
@@ -2439,6 +2522,9 @@ TEST(Perf, Rel) {
       PerfSZ2Rel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
 #endif
       PerfLogSerfQtRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
+      PerfLogSerfQtZigZagRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
+      PerfLogSerfQtZigZagRiceOnly16Rel(data_input_stream, rel_diff, kBlockSizeRel, data_set,
+                                       expr_table_rel);
     }
 
     data_input_stream.close();

@@ -13,6 +13,10 @@
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
 #include "compressor/log_serf_qt_compressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
+#include "compressor/log_serf_qt_zigzag_compressor.h"
+#include "decompressor/log_serf_qt_zigzag_decompressor.h"
+#include "compressor/log_serf_qt_zigzag_rice_only16_compressor.h"
+#include "decompressor/log_serf_qt_zigzag_rice_only16_decompressor.h"
 #include "compressor_32/serf_xor_compressor_32.h"
 #include "decompressor_32/serf_xor_decompressor_32.h"
 #include "compressor/net_serf_xor_compressor.h"
@@ -349,6 +353,84 @@ TEST(Correctness, LogSerfQtStreamingRelativeError) {
       ResetFileStream(data_set_input_stream);
     }
     data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, LogSerfQtZigZagStreamingRelativeError) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &relative_error : kMaxDiffRel) {
+      LogSerfQtZigZagCompressor compressor(kBlockSizeOverall, relative_error);
+      LogSerfQtZigZagDecompressor decompressor;
+      std::vector<double> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() ==
+             kBlockSizeOverall) {
+        for (double value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          const double original = original_data[i];
+          const double actual_error =
+              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
+                            : std::abs(original - recovered[i]) / std::abs(original);
+          if (original == 0) {
+            ASSERT_FALSE(std::signbit(recovered[i]));
+          } else {
+            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]));
+          }
+          ASSERT_LE(actual_error, relative_error)
+              << data_set << " relative_error=" << relative_error
+              << " index=" << block_index * kBlockSizeOverall + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
+  }
+}
+
+TEST(Correctness, LogSerfQtZigZagRiceOnly16StreamingRelativeError) {
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &relative_error : kMaxDiffRel) {
+      LogSerfQtZigZagRiceOnly16Compressor compressor(kBlockSizeOverall, relative_error);
+      LogSerfQtZigZagRiceOnly16Decompressor decompressor;
+      std::vector<double> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() ==
+             kBlockSizeOverall) {
+        for (double value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          const double original = original_data[i];
+          const double actual_error =
+              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
+                            : std::abs(original - recovered[i]) / std::abs(original);
+          if (original == 0) {
+            ASSERT_FALSE(std::signbit(recovered[i]));
+          } else {
+            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]));
+          }
+          ASSERT_LE(actual_error, relative_error)
+              << data_set << " relative_error=" << relative_error
+              << " index=" << block_index * kBlockSizeOverall + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
   }
 }
 

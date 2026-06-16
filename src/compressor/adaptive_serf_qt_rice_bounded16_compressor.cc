@@ -8,7 +8,6 @@
 
 namespace {
 
-constexpr uint32_t kRiceQuotientCap = 16;
 constexpr uint64_t kEscape = std::numeric_limits<uint64_t>::max();
 
 bool Quantize(double value, double prediction, double max_diff, double quantization_step,
@@ -86,27 +85,29 @@ void AdaptiveSerfQtRiceBounded16Compressor::AddValue(double value) {
   if (value_count_ == 0) WriteMetadata();
 
   const AdaptiveQtCodec::AdaptiveRiceChoice choice =
-      AdaptiveQtCodec::SelectAdaptiveBoundedRiceCodec(adaptive_state_);
+      AdaptiveQtCodec::SelectAdaptiveDeltaRiceCodec(adaptive_state_);
   int64_t q = 0;
   double recovered = 0;
   if (Quantize(value, previous_, max_diff_, quantization_step_, inverse_quantization_step_, &q,
                &recovered)) {
     const uint64_t mapped = AdaptiveQtCodec::ZigZagEncode(q) + 1;
-    const AdaptiveQtCodec::AdaptiveCodeLengths lengths =
-        AdaptiveQtCodec::CalculateCappedRiceWithRawCodeLengths(mapped, choice.rice_parameter,
-                                                               kRiceQuotientCap);
+    const AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths =
+        AdaptiveQtCodec::CalculateCappedDeltaRiceWithRawCodeLengths(
+            mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
     if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
       compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRiceWithRaw(
-          mapped, choice.rice_parameter, kRiceQuotientCap, output_.get());
+          mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap, output_.get());
     } else {
       compressed_size_in_bits_ +=
           AdaptiveQtCodec::EncodeMapped(mapped, choice.codec, choice.rice_parameter, output_.get());
     }
-    AdaptiveQtCodec::UpdateAdaptiveBoundedRiceState(mapped, lengths, &adaptive_state_);
+    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(mapped, lengths, &adaptive_state_);
     UpdatePrediction(recovered);
   } else {
     if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-      compressed_size_in_bits_ += AdaptiveQtCodec::WriteCappedRiceRaw(kRiceQuotientCap, output_.get());
+      compressed_size_in_bits_ +=
+          AdaptiveQtCodec::WriteCappedRiceRaw(AdaptiveQtCodec::kBoundedRiceQuotientCap,
+                                              output_.get());
     } else {
       compressed_size_in_bits_ +=
           AdaptiveQtCodec::EncodeMapped(kEscape, choice.codec, choice.rice_parameter, output_.get());

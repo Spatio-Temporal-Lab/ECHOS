@@ -30,7 +30,7 @@ class AdaptiveSerfQtRiceBounded16Compressor {
   std::unique_ptr<OutputBitStream> output_;
   Array<uint8_t> compressed_bytes_;
   double previous_ = 2;
-  AdaptiveQtCodec::AdaptiveBoundedRiceState adaptive_state_{};
+  AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
   bool metadata_initialized_ = false;
   int previous_block_size_ = 0;
   uint64_t previous_max_diff_bits_ = 0;

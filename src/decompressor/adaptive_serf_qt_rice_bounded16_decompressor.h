@@ -12,7 +12,7 @@ class AdaptiveSerfQtRiceBounded16Decompressor {
 
  private:
   double previous_ = 2;
-  AdaptiveQtCodec::AdaptiveBoundedRiceState adaptive_state_{};
+  AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
   bool metadata_initialized_ = false;
   int block_size_ = 0;
   double max_diff_ = 0;

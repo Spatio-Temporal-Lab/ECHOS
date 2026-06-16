@@ -37,7 +37,8 @@ const static std::string kMethodListRel[] = {
 #ifdef SERF_ENABLE_BASELINE_SZ2
     "SZ2_Rel",
 #endif
-    "SerfXOR_Rel", "LogSerfQt_Rel"
+    "SerfXOR_Rel", "LogSerfQt_Rel", "LogSerfQt-ZigZag_Rel",
+    "LogSerfQt-ZigZag-RiceOnly16_Rel"
 };
 const static double kMaxDiffRel[] = {
     0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5

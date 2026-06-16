@@ -260,7 +260,8 @@ at a block boundary. No checkpoints or prediction-state snapshots are written.
 `AdaptiveSerfQt-Rice-Bounded16` is a separate speed-oriented baseline. It preserves the same
 quantization, stream-adaptive metadata, cross-block prediction state, decayed historical costs, and
 natural Rice-parameter inference, but removes legacy Rice and uses one bounded Rice format with
-quotient cap 16. Its bitstream is distinct from `AdaptiveSerfQt-Rice`.
+quotient cap 16. Gamma is removed from its implicit selection, leaving only Delta and bounded Rice.
+Its bitstream is distinct from `AdaptiveSerfQt-Rice`.
 
 `LogSerfQt` uses the same synchronized `cost -= cost >> 4` historical-cost selection, naturally
 bounded Rice-parameter inference, and stream-adaptive metadata in the logarithmic domain. Its
@@ -278,6 +279,12 @@ It caches the last recovered value so repeat values bypass logarithms, quantizat
 and adaptive-codec selection. Non-repeat values use a precomputed inverse quantization step,
 cached code lengths, and log-domain error validation; unary Gamma/Rice prefixes are decoded in
 word-sized chunks.
+
+`LogSerfQt-ZigZag` is a separate speed-oriented relative-error baseline. It preserves the same
+logarithmic quantization, bounded Rice selection, stream-adaptive metadata, and cross-block state,
+but ZigZag-maps signed residuals and merges positive/negative residual modes into a six-mode prefix
+tree. Gamma is removed from its implicit selection, leaving only Delta and bounded Rice. Its
+bitstream is distinct from `LogSerfQt`.
 
 Build and run their standalone correctness and benchmark programs:
 

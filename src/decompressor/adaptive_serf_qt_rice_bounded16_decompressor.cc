@@ -9,7 +9,6 @@
 
 std::vector<double> AdaptiveSerfQtRiceBounded16Decompressor::Decompress(
     const Array<uint8_t> &bytes) {
-  constexpr uint32_t kRiceQuotientCap = 16;
   constexpr uint64_t kEscape = std::numeric_limits<uint64_t>::max();
   InputBitStream input;
   input.SetBuffer(bytes);
@@ -32,12 +31,12 @@ std::vector<double> AdaptiveSerfQtRiceBounded16Decompressor::Decompress(
   result.reserve(block_size_);
   for (int index = 0; index < block_size_; ++index) {
     const AdaptiveQtCodec::AdaptiveRiceChoice choice =
-        AdaptiveQtCodec::SelectAdaptiveBoundedRiceCodec(adaptive_state_);
+        AdaptiveQtCodec::SelectAdaptiveDeltaRiceCodec(adaptive_state_);
     bool raw = false;
     uint64_t mapped = 1;
     if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-      mapped = AdaptiveQtCodec::DecodeCappedRiceWithRaw(choice.rice_parameter, kRiceQuotientCap,
-                                                        &raw, &input);
+      mapped = AdaptiveQtCodec::DecodeCappedRiceWithRaw(
+          choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap, &raw, &input);
     } else {
       mapped = AdaptiveQtCodec::DecodeMapped(choice.codec, choice.rice_parameter, &input);
       raw = mapped == kEscape;
@@ -49,10 +48,10 @@ std::vector<double> AdaptiveSerfQtRiceBounded16Decompressor::Decompress(
     } else {
       const int64_t q = AdaptiveQtCodec::ZigZagDecode(mapped - 1);
       value = previous_ + quantization_step_ * static_cast<double>(q);
-      const AdaptiveQtCodec::AdaptiveCodeLengths lengths =
-          AdaptiveQtCodec::CalculateCappedRiceWithRawCodeLengths(mapped, choice.rice_parameter,
-                                                                 kRiceQuotientCap);
-      AdaptiveQtCodec::UpdateAdaptiveBoundedRiceState(mapped, lengths, &adaptive_state_);
+      const AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths =
+          AdaptiveQtCodec::CalculateCappedDeltaRiceWithRawCodeLengths(
+              mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
+      AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(mapped, lengths, &adaptive_state_);
     }
     result.push_back(value);
     previous_ = std::isfinite(value) ? value : 2;

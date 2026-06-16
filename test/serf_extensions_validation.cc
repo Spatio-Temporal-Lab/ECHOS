@@ -13,11 +13,13 @@
 #include "compressor/adaptive_serf_qt_rice_compressor.h"
 #include "compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
 #include "compressor/log_serf_qt_compressor.h"
+#include "compressor/log_serf_qt_zigzag_compressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "decompressor/adaptive_serf_qt_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_bounded16_decompressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
+#include "decompressor/log_serf_qt_zigzag_decompressor.h"
 #include "decompressor/serf_qt_decompressor.h"
 #include "utils/adaptive_qt_codec.h"
 #include "utils/double.h"
@@ -306,6 +308,39 @@ bool ValidateLog() {
   return true;
 }
 
+bool ValidateLogZigZag() {
+  const double relative_error = 0.01;
+  const std::vector<double> original = {
+      1.0, 1.001, 1.01, 1000.0, -1000.0, -0.001, 0.001,
+      std::numeric_limits<double>::min(), std::numeric_limits<double>::max(),
+      0.0, -0.0, std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()
+  };
+
+  const std::vector<double> recovered =
+      RoundTripBlocks<LogSerfQtZigZagCompressor, LogSerfQtZigZagDecompressor>(
+          original, 7, relative_error);
+  if (recovered.size() != original.size()) return false;
+
+  for (size_t i = 0; i < original.size(); ++i) {
+    if (std::isnan(original[i])) {
+      if (!std::isnan(recovered[i])) return false;
+    } else if (original[i] == 0) {
+      if (recovered[i] != 0 || std::signbit(recovered[i])) return false;
+    } else if (!std::isfinite(original[i])) {
+      if (Double::DoubleToLongBits(original[i]) != Double::DoubleToLongBits(recovered[i])) {
+        return false;
+      }
+    } else {
+      const double error = std::abs(original[i] - recovered[i]) / std::abs(original[i]);
+      if (std::signbit(original[i]) != std::signbit(recovered[i]) || error > relative_error) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 bool ValidateLogMetadata() {
   LogSerfQtCompressor compressor(4, 1.0E-2);
   LogSerfQtDecompressor decompressor;
@@ -341,6 +376,48 @@ bool ValidateLogMetadata() {
   compressor.SetBlockConfig(3, 1.0E-2);
   const auto zeros = encode_block({0.0, -0.0, 0.0}, 1.0E-2);
   if (!zeros.first || zeros.second > 2 + 16 + 3 * 7) return false;
+
+  compressor.SetBlockConfig(3, 1.0E-3);
+  return encode_block({1.0, -1.0, 1.001}, 1.0E-3).first;
+}
+
+bool ValidateLogZigZagMetadata() {
+  LogSerfQtZigZagCompressor compressor(4, 1.0E-2);
+  LogSerfQtZigZagDecompressor decompressor;
+
+  const auto encode_block = [&](const std::vector<double> &values, double relative_error) {
+    for (double value : values) compressor.AddValue(value);
+    compressor.Close();
+    const long bits = compressor.get_compressed_size_in_bits();
+    const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+    if (values.size() != recovered.size()) return std::pair<bool, long>{false, bits};
+    for (size_t i = 0; i < values.size(); ++i) {
+      if (values[i] == 0) {
+        if (recovered[i] != 0 || std::signbit(recovered[i])) {
+          return std::pair<bool, long>{false, bits};
+        }
+      } else if (std::signbit(values[i]) != std::signbit(recovered[i]) ||
+                 std::abs(values[i] - recovered[i]) / std::abs(values[i]) > relative_error) {
+        return std::pair<bool, long>{false, bits};
+      }
+    }
+    return std::pair<bool, long>{true, bits};
+  };
+
+  const auto first = encode_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
+  const auto unchanged = encode_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
+  if (!first.first || !unchanged.first || first.second - unchanged.second < 70) return false;
+
+  LogSerfQtZigZagDecompressor fresh_decompressor;
+  try {
+    fresh_decompressor.Decompress(compressor.compressed_bytes());
+    return false;
+  } catch (const std::runtime_error &) {
+  }
+
+  compressor.SetBlockConfig(3, 1.0E-2);
+  const auto zeros = encode_block({0.0, -0.0, 0.0}, 1.0E-2);
+  if (!zeros.first || zeros.second > 2 + 16 + 3 * 5) return false;
 
   compressor.SetBlockConfig(3, 1.0E-3);
   return encode_block({1.0, -1.0, 1.001}, 1.0E-3).first;
@@ -443,6 +520,33 @@ bool ValidateRealDatasets(const std::filesystem::path &dataset_dir) {
         ++block_index;
       }
       ResetFileStream(input);
+
+      LogSerfQtZigZagCompressor zigzag_compressor(kBlockSizeOverall, relative_error);
+      LogSerfQtZigZagDecompressor zigzag_decompressor;
+      block_index = 0;
+      while ((original = ReadBlock(input, kBlockSizeOverall)).size() == kBlockSizeOverall) {
+        for (double value : original) zigzag_compressor.AddValue(value);
+        zigzag_compressor.Close();
+        const std::vector<double> recovered =
+            zigzag_decompressor.Decompress(zigzag_compressor.compressed_bytes());
+        for (int i = 0; i < kBlockSizeOverall; ++i) {
+          const double expected = original[i];
+          const double actual_error =
+              expected == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
+                            : std::abs(expected - recovered[i]) / std::abs(expected);
+          const bool invalid_sign =
+              expected == 0 ? std::signbit(recovered[i])
+                            : std::signbit(expected) != std::signbit(recovered[i]);
+          if (invalid_sign || actual_error > relative_error) {
+            std::cerr << "LogSerfQt-ZigZag failed: " << data_set
+                      << " relative_error=" << relative_error
+                      << " index=" << block_index * kBlockSizeOverall + i << '\n';
+            return false;
+          }
+        }
+        ++block_index;
+      }
+      ResetFileStream(input);
     }
   }
   return true;
@@ -463,6 +567,8 @@ int main(int argc, char **argv) {
   const bool adaptive_rice_bounded16_metadata_valid = ValidateAdaptiveRiceBounded16Metadata();
   const bool log_valid = ValidateLog();
   const bool log_metadata_valid = ValidateLogMetadata();
+  const bool log_zigzag_valid = ValidateLogZigZag();
+  const bool log_zigzag_metadata_valid = ValidateLogZigZagMetadata();
   const bool real_datasets_valid = ValidateRealDatasets(dataset_dir);
   std::cout << "CappedRice=" << (capped_rice_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "NaturalRiceParameter=" << (natural_rice_parameter_valid ? "PASS" : "FAIL")
@@ -477,12 +583,15 @@ int main(int argc, char **argv) {
             << (adaptive_rice_bounded16_metadata_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "LogSerfQt=" << (log_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "LogSerfQt-Metadata=" << (log_metadata_valid ? "PASS" : "FAIL") << '\n';
+  std::cout << "LogSerfQt-ZigZag=" << (log_zigzag_valid ? "PASS" : "FAIL") << '\n';
+  std::cout << "LogSerfQt-ZigZag-Metadata="
+            << (log_zigzag_metadata_valid ? "PASS" : "FAIL") << '\n';
   std::cout << "RealDatasetsAllBounds=" << (real_datasets_valid ? "PASS" : "FAIL") << '\n';
   return capped_rice_valid && natural_rice_parameter_valid && serf_qt_valid && adaptive_valid &&
                  adaptive_rice_valid &&
                  adaptive_rice_bounded16_valid && adaptive_rice_metadata_valid &&
                  adaptive_rice_bounded16_metadata_valid && log_valid && log_metadata_valid &&
-                 real_datasets_valid
+                 log_zigzag_valid && log_zigzag_metadata_valid && real_datasets_valid
              ? 0
              : 1;
 }

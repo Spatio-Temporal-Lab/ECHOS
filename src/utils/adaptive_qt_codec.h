@@ -18,7 +18,8 @@ enum class IntegerCodec : uint32_t {
   kRaw = 3
 };
 
-constexpr uint32_t kAdaptiveRiceDecayShift = 4;
+constexpr uint32_t kAdaptiveRiceDecayShift = 3;
+constexpr uint32_t kBoundedRiceQuotientCap = 16;
 constexpr uint32_t kAdaptiveRiceFormatQuotientCap = 32;
 constexpr uint32_t kAdaptiveRiceMagnitudeBits = 20;
 constexpr uint64_t kAdaptiveRiceMagnitudeCap = 1ULL << kAdaptiveRiceMagnitudeBits;
@@ -46,10 +47,27 @@ struct AdaptiveBoundedRiceState {
   uint64_t sample_count = 0;
 };
 
+struct AdaptiveDeltaRiceState {
+  uint64_t delta_cost = 0;
+  uint64_t rice_cost = 0;
+  uint64_t magnitude_sum = 0;
+  uint64_t sample_count = 0;
+};
+
+struct AdaptiveRiceParameterState {
+  uint64_t magnitude_sum = 0;
+  uint64_t sample_count = 0;
+};
+
 struct AdaptiveCodeLengths {
   uint64_t gamma;
   uint64_t delta;
   uint64_t rice_direct;
+  uint64_t rice;
+};
+
+struct AdaptiveDeltaRiceCodeLengths {
+  uint64_t delta;
   uint64_t rice;
 };
 
@@ -118,6 +136,20 @@ inline uint32_t EstimateRiceParameter(const AdaptiveBoundedRiceState &state) {
   return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
 }
 
+inline uint32_t EstimateRiceParameter(const AdaptiveDeltaRiceState &state) {
+  if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
+  const uint32_t magnitude_log = FloorLog2(state.magnitude_sum);
+  const uint32_t sample_log = FloorLog2(state.sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
+inline uint32_t EstimateRiceParameter(const AdaptiveRiceParameterState &state) {
+  if (state.magnitude_sum == 0 || state.sample_count == 0) return 0;
+  const uint32_t magnitude_log = FloorLog2(state.magnitude_sum);
+  const uint32_t sample_log = FloorLog2(state.sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
 inline uint64_t AdaptiveRiceLength(uint64_t mapped, uint32_t rice_parameter) {
   // Prefix 0 carries Rice; prefix 10 falls back to Delta for an unexpectedly large residual.
   return std::min(1 + RiceLength(mapped - 1, rice_parameter), 2 + DeltaLength(mapped));
@@ -171,6 +203,26 @@ inline AdaptiveCodeLengths CalculateCappedRiceWithRawCodeLengths(uint64_t mapped
           quotient < quotient_cap ? rice_direct_length : quotient_cap + 1 + delta_length};
 }
 
+inline AdaptiveDeltaRiceCodeLengths CalculateCappedDeltaRiceCodeLengths(
+    uint64_t mapped, uint32_t rice_parameter, uint32_t quotient_cap) {
+  const uint64_t value_bits = FloorLog2(mapped) + 1;
+  const uint64_t delta_length = GammaLength(value_bits) + value_bits - 1;
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  const uint64_t rice_direct_length = quotient + rice_parameter + 1;
+  return {delta_length,
+          quotient < quotient_cap ? rice_direct_length : quotient_cap + delta_length};
+}
+
+inline AdaptiveDeltaRiceCodeLengths CalculateCappedDeltaRiceWithRawCodeLengths(
+    uint64_t mapped, uint32_t rice_parameter, uint32_t quotient_cap) {
+  const uint64_t value_bits = FloorLog2(mapped) + 1;
+  const uint64_t delta_length = GammaLength(value_bits) + value_bits - 1;
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  const uint64_t rice_direct_length = quotient + rice_parameter + 1;
+  return {delta_length,
+          quotient < quotient_cap ? rice_direct_length : quotient_cap + 1 + delta_length};
+}
+
 inline AdaptiveRiceFormatLengths CalculateAdaptiveRiceFormatLengths(uint64_t mapped,
                                                                     uint32_t rice_parameter) {
   const uint64_t mapped_log = FloorLog2(mapped);
@@ -218,6 +270,12 @@ inline AdaptiveRiceChoice SelectAdaptiveBoundedRiceCodec(const AdaptiveBoundedRi
   return choice;
 }
 
+inline AdaptiveRiceChoice SelectAdaptiveDeltaRiceCodec(const AdaptiveDeltaRiceState &state) {
+  AdaptiveRiceChoice choice{IntegerCodec::kDelta, EstimateRiceParameter(state)};
+  if (state.rice_cost < state.delta_cost) choice.codec = IntegerCodec::kRice;
+  return choice;
+}
+
 inline AdaptiveRiceChoice SelectAdaptiveRiceCodecAndFormat(const AdaptiveRiceState &state) {
   AdaptiveRiceChoice choice{IntegerCodec::kDelta, EstimateRiceParameter(state), false};
   uint64_t selected_cost = state.delta_cost;
@@ -255,6 +313,23 @@ inline void UpdateAdaptiveBoundedRiceState(uint64_t mapped, const AdaptiveCodeLe
   state->delta_cost = DecayAndAdd(state->delta_cost, lengths.delta);
   state->gamma_cost = DecayAndAdd(state->gamma_cost, lengths.gamma);
   state->rice_cost = DecayAndAdd(state->rice_cost, lengths.rice);
+  state->magnitude_sum =
+      DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
+  state->sample_count = DecayAndAdd(state->sample_count, 1);
+}
+
+inline void UpdateAdaptiveDeltaRiceState(uint64_t mapped,
+                                         const AdaptiveDeltaRiceCodeLengths &lengths,
+                                         AdaptiveDeltaRiceState *state) {
+  state->delta_cost = DecayAndAdd(state->delta_cost, lengths.delta);
+  state->rice_cost = DecayAndAdd(state->rice_cost, lengths.rice);
+  state->magnitude_sum =
+      DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
+  state->sample_count = DecayAndAdd(state->sample_count, 1);
+}
+
+inline void UpdateAdaptiveRiceParameterState(uint64_t mapped,
+                                             AdaptiveRiceParameterState *state) {
   state->magnitude_sum =
       DecayAndAdd(state->magnitude_sum, std::min(mapped - 1, kAdaptiveRiceMagnitudeCap));
   state->sample_count = DecayAndAdd(state->sample_count, 1);

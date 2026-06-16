@@ -13,12 +13,14 @@
 #include "compressor/adaptive_serf_qt_rice_compressor.h"
 #include "compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
 #include "compressor/log_serf_qt_compressor.h"
+#include "compressor/log_serf_qt_zigzag_compressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "compressor/serf_xor_compressor_rel.h"
 #include "decompressor/adaptive_serf_qt_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_decompressor.h"
 #include "decompressor/adaptive_serf_qt_rice_bounded16_decompressor.h"
 #include "decompressor/log_serf_qt_decompressor.h"
+#include "decompressor/log_serf_qt_zigzag_decompressor.h"
 #include "decompressor/serf_qt_decompressor.h"
 #include "decompressor/serf_xor_decompressor.h"
 
@@ -156,6 +158,9 @@ int main(int argc, char **argv) {
     };
     Print(dataset, "LogSerfQt",
           Run<LogSerfQtCompressor, LogSerfQtDecompressor>(values, relative_bound, relative_error));
+    Print(dataset, "LogSerfQt-ZigZag",
+          Run<LogSerfQtZigZagCompressor, LogSerfQtZigZagDecompressor>(
+              values, relative_bound, relative_error));
     Print(dataset, "SerfXOR-Relative",
           RunSerfXorRelative(values, relative_bound, adjust_digits.at(dataset)));
   }
