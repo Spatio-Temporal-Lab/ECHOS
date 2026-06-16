@@ -14,7 +14,8 @@ class LogSerfQtZigZagRiceOnly16Decompressor {
   double previous_log_ = 0;
   double previous_value_ = 1;
   bool previous_sign_ = false;
-  AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
+  uint64_t adaptive_magnitude_sum_ = 0;
+  uint64_t adaptive_sample_count_ = 0;
   bool metadata_initialized_ = false;
   int block_size_ = 0;
   double log_max_diff_ = 0;

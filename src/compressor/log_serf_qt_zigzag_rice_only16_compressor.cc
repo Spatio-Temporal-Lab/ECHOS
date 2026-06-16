@@ -1,5 +1,6 @@
 #include "compressor/log_serf_qt_zigzag_rice_only16_compressor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -35,6 +36,19 @@ bool QuantizeLog(double magnitude, double prediction, double log_max_diff, doubl
   *recovered_log = prediction + 2 * log_max_diff * static_cast<double>(*q);
   const double log_error = *recovered_log - *target_log;
   return log_error >= lower_log_error_bound && log_error <= upper_log_error_bound;
+}
+
+uint32_t EstimateRiceParameter(uint64_t magnitude_sum, uint64_t sample_count) {
+  if (magnitude_sum == 0 || sample_count == 0) return 0;
+  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(magnitude_sum);
+  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
+void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t *sample_count) {
+  *magnitude_sum = AdaptiveQtCodec::DecayAndAdd(
+      *magnitude_sum, std::min(mapped - 1, AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap));
+  *sample_count = AdaptiveQtCodec::DecayAndAdd(*sample_count, 1);
 }
 
 }  // namespace
@@ -113,8 +127,8 @@ LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
     return best;
   }
 
-  best.integer_choice = {AdaptiveQtCodec::IntegerCodec::kRice,
-                         AdaptiveQtCodec::EstimateRiceParameter(adaptive_state_), false};
+  best.rice_parameter =
+      EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
   int64_t q = 0;
   double target_log = 0;
   double recovered_log = 0;
@@ -130,23 +144,23 @@ LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
   const bool changed_sign = best.sign != previous_sign_;
   best.mapped = AdaptiveQtCodec::ZigZagEncode(q);
   best.recovered_log = recovered_log;
-  best.lengths = AdaptiveQtCodec::CalculateCappedDeltaRiceCodeLengths(
-      best.mapped, best.integer_choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
+  best.rice_bits = AdaptiveQtCodec::CappedRiceLength(
+      best.mapped, best.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
   const uint64_t prefix_bits = changed_sign ? 3 : 2;
-  if (prefix_bits + best.lengths.rice < best.bits) {
+  if (prefix_bits + best.rice_bits < best.bits) {
     const double recovered_magnitude = std::exp(recovered_log);
     if (!std::isfinite(recovered_magnitude)) return best;
     best.mode = changed_sign ? Mode::kChangedSignResidual : Mode::kSameSignResidual;
     best.recovered_value = best.sign ? -recovered_magnitude : recovered_magnitude;
-    best.bits = prefix_bits + best.lengths.rice;
+    best.bits = prefix_bits + best.rice_bits;
   }
   return best;
 }
 
 void LogSerfQtZigZagRiceOnly16Compressor::WriteResidual(const Choice &choice) {
   compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRice(
-      choice.mapped, choice.integer_choice.rice_parameter,
-      AdaptiveQtCodec::kBoundedRiceQuotientCap, output_.get());
+      choice.mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
+      output_.get());
 }
 
 void LogSerfQtZigZagRiceOnly16Compressor::WriteChoice(const Choice &choice, double original) {
@@ -189,7 +203,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::UpdateState(const Choice &choice, doub
   previous_value_ = choice.recovered_value;
   previous_sign_ = choice.sign;
   if (choice.mode != Mode::kChangedSignZeroResidual) {
-    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(choice.mapped, choice.lengths, &adaptive_state_);
+    UpdateRiceParameterState(choice.mapped, &adaptive_magnitude_sum_, &adaptive_sample_count_);
   }
 }
 

@@ -1,5 +1,6 @@
 #include "decompressor/log_serf_qt_zigzag_rice_only16_decompressor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -24,6 +25,19 @@ Mode ReadMode(InputBitStream *input) {
   if (!input->ReadBit()) return Mode::kChangedSignResidual;
   if (!input->ReadBit()) return Mode::kChangedSignZeroResidual;
   return !input->ReadBit() ? Mode::kZero : Mode::kRaw;
+}
+
+uint32_t EstimateRiceParameter(uint64_t magnitude_sum, uint64_t sample_count) {
+  if (magnitude_sum == 0 || sample_count == 0) return 0;
+  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(magnitude_sum);
+  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
+void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t *sample_count) {
+  *magnitude_sum = AdaptiveQtCodec::DecayAndAdd(
+      *magnitude_sum, std::min(mapped - 1, AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap));
+  *sample_count = AdaptiveQtCodec::DecayAndAdd(*sample_count, 1);
 }
 
 }  // namespace
@@ -74,7 +88,8 @@ std::vector<double> LogSerfQtZigZagRiceOnly16Decompressor::Decompress(
       continue;
     }
 
-    const uint32_t rice_parameter = AdaptiveQtCodec::EstimateRiceParameter(adaptive_state_);
+    const uint32_t rice_parameter =
+        EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
     const uint64_t mapped =
         AdaptiveQtCodec::DecodeCappedRice(rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
                                           &input);
@@ -88,10 +103,7 @@ std::vector<double> LogSerfQtZigZagRiceOnly16Decompressor::Decompress(
     const double magnitude = std::exp(previous_log_);
     previous_value_ = previous_sign_ ? -magnitude : magnitude;
     result.push_back(previous_value_);
-    const AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths =
-        AdaptiveQtCodec::CalculateCappedDeltaRiceCodeLengths(
-            mapped, rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
-    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(mapped, lengths, &adaptive_state_);
+    UpdateRiceParameterState(mapped, &adaptive_magnitude_sum_, &adaptive_sample_count_);
   }
   return result;
 }
