@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 
 project(Serf-All)
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 # Print system info
 if(WIN32)
     message(STATUS "[SelfCheck] Host System: Windows (32bit)")

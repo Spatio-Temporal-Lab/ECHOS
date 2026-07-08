@@ -1,12 +1,12 @@
-#ifndef LOG_SERF_QT_ZIGZAG_RICE_ONLY16_DECOMPRESSOR_H_
-#define LOG_SERF_QT_ZIGZAG_RICE_ONLY16_DECOMPRESSOR_H_
+#ifndef ECHOS_REL_DECOMPRESSOR_H_
+#define ECHOS_REL_DECOMPRESSOR_H_
 
 #include <vector>
 
 #include "utils/adaptive_qt_codec.h"
 #include "utils/array.h"
 
-class LogSerfQtZigZagRiceOnly16Decompressor {
+class EchosRelDecompressor {
  public:
   std::vector<double> Decompress(const Array<uint8_t> &bytes);
 
@@ -21,4 +21,4 @@ class LogSerfQtZigZagRiceOnly16Decompressor {
   double log_max_diff_ = 0;
 };
 
-#endif  // LOG_SERF_QT_ZIGZAG_RICE_ONLY16_DECOMPRESSOR_H_
+#endif  // ECHOS_REL_DECOMPRESSOR_H_

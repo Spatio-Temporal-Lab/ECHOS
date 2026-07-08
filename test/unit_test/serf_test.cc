@@ -7,16 +7,10 @@
 #include "decompressor/serf_xor_decompressor.h"
 #include "compressor/serf_qt_compressor.h"
 #include "decompressor/serf_qt_decompressor.h"
-#include "compressor/adaptive_serf_qt_compressor.h"
-#include "decompressor/adaptive_serf_qt_decompressor.h"
-#include "compressor/adaptive_serf_qt_rice_compressor.h"
-#include "decompressor/adaptive_serf_qt_rice_decompressor.h"
-#include "compressor/log_serf_qt_compressor.h"
-#include "decompressor/log_serf_qt_decompressor.h"
-#include "compressor/log_serf_qt_zigzag_compressor.h"
-#include "decompressor/log_serf_qt_zigzag_decompressor.h"
-#include "compressor/log_serf_qt_zigzag_rice_only16_compressor.h"
-#include "decompressor/log_serf_qt_zigzag_rice_only16_decompressor.h"
+#include "compressor/echos_abs_compressor.h"
+#include "decompressor/echos_abs_decompressor.h"
+#include "compressor/echos_rel_compressor.h"
+#include "decompressor/echos_rel_decompressor.h"
 #include "compressor_32/serf_xor_compressor_32.h"
 #include "decompressor_32/serf_xor_decompressor_32.h"
 #include "compressor/net_serf_xor_compressor.h"
@@ -225,14 +219,14 @@ TEST(Correctness, SerfQt) {
 //   }
 // }
 
-TEST(Correctness, AdaptiveSerfQtStreaming) {
+TEST(Correctness, EchosAbsStreaming) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
 
     for (const auto &max_diff : kMaxDiffList) {
-      AdaptiveSerfQtCompressor compressor(kBlockSizeOverall, max_diff);
-      AdaptiveSerfQtDecompressor decompressor;
+      EchosAbsCompressor compressor(kBlockSizeOverall, max_diff);
+      EchosAbsDecompressor decompressor;
       std::vector<double> original_data;
       size_t block_index = 0;
 
@@ -255,39 +249,9 @@ TEST(Correctness, AdaptiveSerfQtStreaming) {
   }
 }
 
-TEST(Correctness, AdaptiveSerfQtRiceStreaming) {
-  for (const auto &data_set : kDataSetList) {
-    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
-
-    for (const auto &max_diff : kMaxDiffList) {
-      AdaptiveSerfQtRiceCompressor compressor(kBlockSizeOverall, max_diff);
-      AdaptiveSerfQtRiceDecompressor decompressor;
-      std::vector<double> original_data;
-      size_t block_index = 0;
-
-      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() == kBlockSizeOverall) {
-        for (double value : original_data) compressor.AddValue(value);
-        compressor.Close();
-        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
-
-        ASSERT_EQ(original_data.size(), recovered.size()) << data_set << " max_diff=" << max_diff;
-        for (int i = 0; i < kBlockSizeOverall; ++i) {
-          ASSERT_LE(std::abs(original_data[i] - recovered[i]), max_diff)
-              << data_set << " max_diff=" << max_diff
-              << " index=" << block_index * kBlockSizeOverall + i;
-        }
-        ++block_index;
-      }
-      ResetFileStream(data_set_input_stream);
-    }
-    data_set_input_stream.close();
-  }
-}
-
-TEST(Correctness, AdaptiveSerfQtRiceMetadataChanges) {
-  AdaptiveSerfQtRiceCompressor compressor(4, 1.0E-3);
-  AdaptiveSerfQtRiceDecompressor decompressor;
+TEST(Correctness, EchosAbsMetadataChanges) {
+  EchosAbsCompressor compressor(4, 1.0E-3);
+  EchosAbsDecompressor decompressor;
 
   const auto verify_block = [&](const std::vector<double> &original, double error_bound) {
     for (double value : original) compressor.AddValue(value);
@@ -303,7 +267,7 @@ TEST(Correctness, AdaptiveSerfQtRiceMetadataChanges) {
   const long first_bits = verify_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
   const long unchanged_bits = verify_block({2.0, 2.0, 2.0, 2.0}, 1.0E-3);
   EXPECT_GE(first_bits - unchanged_bits, 70);
-  AdaptiveSerfQtRiceDecompressor fresh_decompressor;
+  EchosAbsDecompressor fresh_decompressor;
   EXPECT_THROW(fresh_decompressor.Decompress(compressor.compressed_bytes()), std::runtime_error);
 
   compressor.SetBlockConfig(3, 1.0E-3);
@@ -313,14 +277,35 @@ TEST(Correctness, AdaptiveSerfQtRiceMetadataChanges) {
   verify_block({2.0, 2.0, 2.0}, 1.0E-4);
 }
 
-TEST(Correctness, LogSerfQtStreamingRelativeError) {
+TEST(Correctness, EchosAbsRawEscape) {
+  EchosAbsCompressor compressor(4, 1.0E-3);
+  EchosAbsDecompressor decompressor;
+  const std::vector<double> original = {
+      1.0,
+      std::numeric_limits<double>::infinity(),
+      -2.5,
+      std::numeric_limits<double>::quiet_NaN()};
+
+  for (double value : original) compressor.AddValue(value);
+  compressor.Close();
+  const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+  ASSERT_EQ(original.size(), recovered.size());
+  EXPECT_NEAR(original[0], recovered[0], 1.0E-3);
+  EXPECT_TRUE(std::isinf(recovered[1]));
+  EXPECT_EQ(std::signbit(original[1]), std::signbit(recovered[1]));
+  EXPECT_NEAR(original[2], recovered[2], 1.0E-3);
+  EXPECT_TRUE(std::isnan(recovered[3]));
+}
+
+TEST(Correctness, EchosRelStreamingRelativeError) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
     ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
 
     for (const auto &relative_error : kMaxDiffRel) {
-      LogSerfQtCompressor compressor(kBlockSizeOverall, relative_error);
-      LogSerfQtDecompressor decompressor;
+      EchosRelCompressor compressor(kBlockSizeOverall, relative_error);
+      EchosRelDecompressor decompressor;
       std::vector<double> original_data;
       size_t block_index = 0;
 
@@ -356,87 +341,9 @@ TEST(Correctness, LogSerfQtStreamingRelativeError) {
   }
 }
 
-TEST(Correctness, LogSerfQtZigZagStreamingRelativeError) {
-  for (const auto &data_set : kDataSetList) {
-    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
-
-    for (const auto &relative_error : kMaxDiffRel) {
-      LogSerfQtZigZagCompressor compressor(kBlockSizeOverall, relative_error);
-      LogSerfQtZigZagDecompressor decompressor;
-      std::vector<double> original_data;
-      size_t block_index = 0;
-
-      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() ==
-             kBlockSizeOverall) {
-        for (double value : original_data) compressor.AddValue(value);
-        compressor.Close();
-        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
-
-        ASSERT_EQ(original_data.size(), recovered.size());
-        for (int i = 0; i < kBlockSizeOverall; ++i) {
-          const double original = original_data[i];
-          const double actual_error =
-              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
-                            : std::abs(original - recovered[i]) / std::abs(original);
-          if (original == 0) {
-            ASSERT_FALSE(std::signbit(recovered[i]));
-          } else {
-            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]));
-          }
-          ASSERT_LE(actual_error, relative_error)
-              << data_set << " relative_error=" << relative_error
-              << " index=" << block_index * kBlockSizeOverall + i;
-        }
-        ++block_index;
-      }
-      ResetFileStream(data_set_input_stream);
-    }
-  }
-}
-
-TEST(Correctness, LogSerfQtZigZagRiceOnly16StreamingRelativeError) {
-  for (const auto &data_set : kDataSetList) {
-    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
-    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
-
-    for (const auto &relative_error : kMaxDiffRel) {
-      LogSerfQtZigZagRiceOnly16Compressor compressor(kBlockSizeOverall, relative_error);
-      LogSerfQtZigZagRiceOnly16Decompressor decompressor;
-      std::vector<double> original_data;
-      size_t block_index = 0;
-
-      while ((original_data = ReadBlock(data_set_input_stream, kBlockSizeOverall)).size() ==
-             kBlockSizeOverall) {
-        for (double value : original_data) compressor.AddValue(value);
-        compressor.Close();
-        const std::vector<double> recovered = decompressor.Decompress(compressor.compressed_bytes());
-
-        ASSERT_EQ(original_data.size(), recovered.size());
-        for (int i = 0; i < kBlockSizeOverall; ++i) {
-          const double original = original_data[i];
-          const double actual_error =
-              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
-                            : std::abs(original - recovered[i]) / std::abs(original);
-          if (original == 0) {
-            ASSERT_FALSE(std::signbit(recovered[i]));
-          } else {
-            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]));
-          }
-          ASSERT_LE(actual_error, relative_error)
-              << data_set << " relative_error=" << relative_error
-              << " index=" << block_index * kBlockSizeOverall + i;
-        }
-        ++block_index;
-      }
-      ResetFileStream(data_set_input_stream);
-    }
-  }
-}
-
-TEST(Correctness, LogSerfQtMetadataChangesAndZeroMode) {
-  LogSerfQtCompressor compressor(4, 1.0E-2);
-  LogSerfQtDecompressor decompressor;
+TEST(Correctness, EchosRelMetadataChangesAndZeroMode) {
+  EchosRelCompressor compressor(4, 1.0E-2);
+  EchosRelDecompressor decompressor;
 
   const auto verify_block = [&](const std::vector<double> &original, double relative_error) {
     for (double value : original) compressor.AddValue(value);
@@ -458,12 +365,12 @@ TEST(Correctness, LogSerfQtMetadataChangesAndZeroMode) {
   const long first_bits = verify_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
   const long unchanged_bits = verify_block({1.0, 1.0, 1.0, 1.0}, 1.0E-2);
   EXPECT_GE(first_bits - unchanged_bits, 70);
-  LogSerfQtDecompressor fresh_decompressor;
+  EchosRelDecompressor fresh_decompressor;
   EXPECT_THROW(fresh_decompressor.Decompress(compressor.compressed_bytes()), std::runtime_error);
 
   compressor.SetBlockConfig(3, 1.0E-2);
   const long zero_bits = verify_block({0.0, -0.0, 0.0}, 1.0E-2);
-  EXPECT_LE(zero_bits, 2 + 16 + 3 * 7);
+  EXPECT_LE(zero_bits, 2 + 16 + 3 * 5);
 
   compressor.SetBlockConfig(3, 1.0E-3);
   verify_block({1.0, -1.0, 1.001}, 1.0E-3);

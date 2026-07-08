@@ -64,7 +64,7 @@ class PerfRecord {
  public:
   PerfRecord() = default;
 
-  void IncreaseCompressionTime(std::chrono::microseconds &duration) {
+  void IncreaseCompressionTime(std::chrono::nanoseconds &duration) {
     compression_time_ += duration;
   }
 
@@ -73,10 +73,10 @@ class PerfRecord {
   }
 
   auto AvgCompressionTimePerBlock() {
-    return static_cast<double>(compression_time_.count()) / block_count_;
+    return static_cast<double>(compression_time_.count()) / 1000.0 / block_count_;
   }
 
-  void IncreaseDecompressionTime(std::chrono::microseconds &duration) {
+  void IncreaseDecompressionTime(std::chrono::nanoseconds &duration) {
     decompression_time_ += duration;
   }
 
@@ -85,7 +85,7 @@ class PerfRecord {
   }
 
   auto AvgDecompressionTimePerBlock() {
-    return static_cast<double>(decompression_time_.count()) / block_count_;
+    return static_cast<double>(decompression_time_.count()) / 1000.0 / block_count_;
   }
 
   long compressed_size_in_bits() {
@@ -110,8 +110,8 @@ class PerfRecord {
   }
 
  private:
-  std::chrono::microseconds compression_time_ = std::chrono::microseconds::zero();
-  std::chrono::microseconds decompression_time_ = std::chrono::microseconds::zero();
+  std::chrono::nanoseconds compression_time_ = std::chrono::nanoseconds::zero();
+  std::chrono::nanoseconds decompression_time_ = std::chrono::nanoseconds::zero();
   long compressed_size_in_bits_ = 0;
   int block_count_ = 0;
 };

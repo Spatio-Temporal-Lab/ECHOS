@@ -1,5 +1,6 @@
-#include "decompressor/log_serf_qt_zigzag_decompressor.h"
+#include "decompressor/echos_rel_decompressor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -8,8 +9,6 @@
 #include "utils/input_bit_stream.h"
 
 namespace {
-
-constexpr uint32_t kRiceQuotientCap = 16;
 
 enum class Mode {
   kRepeat,
@@ -28,21 +27,34 @@ Mode ReadMode(InputBitStream *input) {
   return !input->ReadBit() ? Mode::kZero : Mode::kRaw;
 }
 
+uint32_t EstimateRiceParameter(uint64_t magnitude_sum, uint64_t sample_count) {
+  if (magnitude_sum == 0 || sample_count == 0) return 0;
+  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(magnitude_sum);
+  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(sample_count);
+  return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
+void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t *sample_count) {
+  *magnitude_sum = AdaptiveQtCodec::DecayAndAdd(
+      *magnitude_sum, std::min(mapped - 1, AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap));
+  *sample_count = AdaptiveQtCodec::DecayAndAdd(*sample_count, 1);
+}
+
 }  // namespace
 
-std::vector<double> LogSerfQtZigZagDecompressor::Decompress(const Array<uint8_t> &bytes) {
+std::vector<double> EchosRelDecompressor::Decompress(const Array<uint8_t> &bytes) {
   InputBitStream input;
   input.SetBuffer(bytes);
   const bool block_size_changed = input.ReadBit();
   const bool log_max_diff_changed = input.ReadBit();
   if (!metadata_initialized_ && (!block_size_changed || !log_max_diff_changed)) {
-    throw std::runtime_error("First ZigZag Log Serf-QT block must contain full metadata");
+    throw std::runtime_error("First ECHOS relative block must contain full metadata");
   }
   if (block_size_changed) block_size_ = input.ReadInt(16);
   if (log_max_diff_changed) log_max_diff_ = Double::LongBitsToDouble(input.ReadLong(64));
   if (block_size_ <= 0 || block_size_ > 65535 || !std::isfinite(log_max_diff_) ||
       log_max_diff_ <= 0) {
-    throw std::runtime_error("Invalid ZigZag Log Serf-QT metadata");
+    throw std::runtime_error("Invalid ECHOS relative metadata");
   }
   metadata_initialized_ = true;
 
@@ -75,16 +87,13 @@ std::vector<double> LogSerfQtZigZagDecompressor::Decompress(const Array<uint8_t>
       continue;
     }
 
-    const AdaptiveQtCodec::AdaptiveRiceChoice choice =
-        AdaptiveQtCodec::SelectAdaptiveDeltaRiceCodec(adaptive_state_);
-    uint64_t mapped;
-    if (choice.codec == AdaptiveQtCodec::IntegerCodec::kRice) {
-      mapped = AdaptiveQtCodec::DecodeCappedRice(choice.rice_parameter, kRiceQuotientCap, &input);
-    } else {
-      mapped = AdaptiveQtCodec::DecodeMapped(choice.codec, choice.rice_parameter, &input);
-    }
+    const uint32_t rice_parameter =
+        EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
+    const uint64_t mapped =
+        AdaptiveQtCodec::DecodeCappedRice(rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
+                                          &input);
     if (mapped == std::numeric_limits<uint64_t>::max()) {
-      throw std::runtime_error("Invalid ZigZag Log Serf-QT residual");
+      throw std::runtime_error("Invalid ECHOS relative residual");
     }
 
     if (mode == Mode::kChangedSignResidual) previous_sign_ = !previous_sign_;
@@ -93,10 +102,7 @@ std::vector<double> LogSerfQtZigZagDecompressor::Decompress(const Array<uint8_t>
     const double magnitude = std::exp(previous_log_);
     previous_value_ = previous_sign_ ? -magnitude : magnitude;
     result.push_back(previous_value_);
-    const AdaptiveQtCodec::AdaptiveDeltaRiceCodeLengths lengths =
-        AdaptiveQtCodec::CalculateCappedDeltaRiceCodeLengths(mapped, choice.rice_parameter,
-                                                             kRiceQuotientCap);
-    AdaptiveQtCodec::UpdateAdaptiveDeltaRiceState(mapped, lengths, &adaptive_state_);
+    UpdateRiceParameterState(mapped, &adaptive_magnitude_sum_, &adaptive_sample_count_);
   }
   return result;
 }

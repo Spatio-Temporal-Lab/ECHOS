@@ -1,5 +1,5 @@
-#ifndef ADAPTIVE_SERF_QT_RICE_COMPRESSOR_H_
-#define ADAPTIVE_SERF_QT_RICE_COMPRESSOR_H_
+#ifndef ECHOS_ABS_COMPRESSOR_H_
+#define ECHOS_ABS_COMPRESSOR_H_
 
 #include <cstdint>
 #include <memory>
@@ -8,12 +8,10 @@
 #include "utils/array.h"
 #include "utils/output_bit_stream.h"
 
-class AdaptiveSerfQtRiceCompressor {
+class EchosAbsCompressor {
  public:
-  // Coding decisions use only synchronized, deterministically decayed historical costs.
-  AdaptiveSerfQtRiceCompressor(int block_size, double max_diff);
+  EchosAbsCompressor(int block_size, double max_diff);
 
-  // Changes the next block's metadata while preserving the stream's prediction and coding state.
   void SetBlockConfig(int block_size, double max_diff);
   void AddValue(double value);
   void Close();
@@ -32,7 +30,7 @@ class AdaptiveSerfQtRiceCompressor {
   std::unique_ptr<OutputBitStream> output_;
   Array<uint8_t> compressed_bytes_;
   double previous_ = 2;
-  AdaptiveQtCodec::AdaptiveRiceState adaptive_state_{};
+  AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
   bool metadata_initialized_ = false;
   int previous_block_size_ = 0;
   uint64_t previous_max_diff_bits_ = 0;
@@ -41,4 +39,4 @@ class AdaptiveSerfQtRiceCompressor {
   long stored_compressed_size_in_bits_ = 0;
 };
 
-#endif  // ADAPTIVE_SERF_QT_RICE_COMPRESSOR_H_
+#endif  // ECHOS_ABS_COMPRESSOR_H_

@@ -1,5 +1,5 @@
-#ifndef LOG_SERF_QT_ZIGZAG_RICE_ONLY16_COMPRESSOR_H_
-#define LOG_SERF_QT_ZIGZAG_RICE_ONLY16_COMPRESSOR_H_
+#ifndef ECHOS_REL_COMPRESSOR_H_
+#define ECHOS_REL_COMPRESSOR_H_
 
 #include <cstdint>
 #include <memory>
@@ -8,9 +8,9 @@
 #include "utils/array.h"
 #include "utils/output_bit_stream.h"
 
-class LogSerfQtZigZagRiceOnly16Compressor {
+class EchosRelCompressor {
  public:
-  LogSerfQtZigZagRiceOnly16Compressor(int block_size, double relative_error_bound);
+  EchosRelCompressor(int block_size, double relative_error_bound);
 
   void SetBlockConfig(int block_size, double relative_error_bound);
   void AddValue(double value);
@@ -70,4 +70,4 @@ class LogSerfQtZigZagRiceOnly16Compressor {
   long stored_compressed_size_in_bits_ = 0;
 };
 
-#endif  // LOG_SERF_QT_ZIGZAG_RICE_ONLY16_COMPRESSOR_H_
+#endif  // ECHOS_REL_COMPRESSOR_H_

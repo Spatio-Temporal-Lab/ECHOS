@@ -1,4 +1,4 @@
-#include "compressor/adaptive_serf_qt_rice_bounded16_compressor.h"
+#include "compressor/echos_abs_compressor.h"
 
 #include <cmath>
 #include <limits>
@@ -39,8 +39,7 @@ bool Quantize(double value, double prediction, double max_diff, double quantizat
 
 }  // namespace
 
-AdaptiveSerfQtRiceBounded16Compressor::AdaptiveSerfQtRiceBounded16Compressor(int block_size,
-                                                                             double max_diff)
+EchosAbsCompressor::EchosAbsCompressor(int block_size, double max_diff)
     : block_size_(block_size),
       max_diff_(max_diff * 0.999),
       quantization_step_(2 * max_diff_),
@@ -50,7 +49,7 @@ AdaptiveSerfQtRiceBounded16Compressor::AdaptiveSerfQtRiceBounded16Compressor(int
   output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(24 * block_size + 32));
 }
 
-void AdaptiveSerfQtRiceBounded16Compressor::SetBlockConfig(int block_size, double max_diff) {
+void EchosAbsCompressor::SetBlockConfig(int block_size, double max_diff) {
   if (value_count_ != 0) throw std::runtime_error("Cannot change block config inside a block");
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   if (!std::isfinite(max_diff) || max_diff <= 0) throw std::invalid_argument("Invalid error bound");
@@ -61,7 +60,7 @@ void AdaptiveSerfQtRiceBounded16Compressor::SetBlockConfig(int block_size, doubl
   output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(24 * block_size + 32));
 }
 
-void AdaptiveSerfQtRiceBounded16Compressor::WriteMetadata() {
+void EchosAbsCompressor::WriteMetadata() {
   const uint64_t max_diff_bits = Double::DoubleToLongBits(max_diff_);
   const bool block_size_changed = !metadata_initialized_ || block_size_ != previous_block_size_;
   const bool max_diff_changed = !metadata_initialized_ || max_diff_bits != previous_max_diff_bits_;
@@ -74,13 +73,13 @@ void AdaptiveSerfQtRiceBounded16Compressor::WriteMetadata() {
   metadata_initialized_ = true;
 }
 
-void AdaptiveSerfQtRiceBounded16Compressor::UpdatePrediction(double recovered) {
+void EchosAbsCompressor::UpdatePrediction(double recovered) {
   previous_ = std::isfinite(recovered) ? recovered : 2;
 }
 
-void AdaptiveSerfQtRiceBounded16Compressor::AddValue(double value) {
+void EchosAbsCompressor::AddValue(double value) {
   if (value_count_ >= block_size_) {
-    throw std::runtime_error("Adaptive Serf-QT-Rice-Bounded16 block is full");
+    throw std::runtime_error("ECHOS absolute block is full");
   }
   if (value_count_ == 0) WriteMetadata();
 
@@ -118,9 +117,9 @@ void AdaptiveSerfQtRiceBounded16Compressor::AddValue(double value) {
   ++value_count_;
 }
 
-void AdaptiveSerfQtRiceBounded16Compressor::Close() {
+void EchosAbsCompressor::Close() {
   if (value_count_ != block_size_) {
-    throw std::runtime_error("Adaptive Serf-QT-Rice-Bounded16 block is incomplete");
+    throw std::runtime_error("ECHOS absolute block is incomplete");
   }
   output_->Flush();
   compressed_bytes_ =
@@ -131,10 +130,10 @@ void AdaptiveSerfQtRiceBounded16Compressor::Close() {
   value_count_ = 0;
 }
 
-Array<uint8_t> AdaptiveSerfQtRiceBounded16Compressor::compressed_bytes() const {
+Array<uint8_t> EchosAbsCompressor::compressed_bytes() const {
   return compressed_bytes_;
 }
 
-long AdaptiveSerfQtRiceBounded16Compressor::get_compressed_size_in_bits() const {
+long EchosAbsCompressor::get_compressed_size_in_bits() const {
   return stored_compressed_size_in_bits_;
 }

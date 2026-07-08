@@ -1,12 +1,12 @@
-#ifndef ADAPTIVE_SERF_QT_RICE_BOUNDED16_DECOMPRESSOR_H_
-#define ADAPTIVE_SERF_QT_RICE_BOUNDED16_DECOMPRESSOR_H_
+#ifndef ECHOS_ABS_DECOMPRESSOR_H_
+#define ECHOS_ABS_DECOMPRESSOR_H_
 
 #include <vector>
 
 #include "utils/adaptive_qt_codec.h"
 #include "utils/array.h"
 
-class AdaptiveSerfQtRiceBounded16Decompressor {
+class EchosAbsDecompressor {
  public:
   std::vector<double> Decompress(const Array<uint8_t> &bytes);
 
@@ -19,4 +19,4 @@ class AdaptiveSerfQtRiceBounded16Decompressor {
   double quantization_step_ = 0;
 };
 
-#endif  // ADAPTIVE_SERF_QT_RICE_BOUNDED16_DECOMPRESSOR_H_
+#endif  // ECHOS_ABS_DECOMPRESSOR_H_

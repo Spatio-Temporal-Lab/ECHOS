@@ -1,4 +1,4 @@
-#include "compressor/log_serf_qt_zigzag_rice_only16_compressor.h"
+#include "compressor/echos_rel_compressor.h"
 
 #include <algorithm>
 #include <cmath>
@@ -53,15 +53,14 @@ void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t
 
 }  // namespace
 
-LogSerfQtZigZagRiceOnly16Compressor::LogSerfQtZigZagRiceOnly16Compressor(
-    int block_size, double relative_error_bound)
+EchosRelCompressor::EchosRelCompressor(int block_size, double relative_error_bound)
     : block_size_(block_size) {
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   UpdateErrorConfig(relative_error_bound);
   output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::UpdateErrorConfig(double relative_error_bound) {
+void EchosRelCompressor::UpdateErrorConfig(double relative_error_bound) {
   if (!std::isfinite(relative_error_bound) || relative_error_bound <= 0) {
     throw std::invalid_argument("Invalid relative error bound");
   }
@@ -74,8 +73,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::UpdateErrorConfig(double relative_erro
   inverse_log_step_ = 1.0 / (2 * log_max_diff_);
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::SetBlockConfig(int block_size,
-                                                         double relative_error_bound) {
+void EchosRelCompressor::SetBlockConfig(int block_size, double relative_error_bound) {
   if (value_count_ != 0) throw std::runtime_error("Cannot change block config inside a block");
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   block_size_ = block_size;
@@ -83,7 +81,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::SetBlockConfig(int block_size,
   output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::WriteMetadata() {
+void EchosRelCompressor::WriteMetadata() {
   const uint64_t log_max_diff_bits = Double::DoubleToLongBits(log_max_diff_);
   const bool block_size_changed = !metadata_initialized_ || block_size_ != previous_block_size_;
   const bool log_max_diff_changed =
@@ -97,8 +95,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::WriteMetadata() {
   metadata_initialized_ = true;
 }
 
-LogSerfQtZigZagRiceOnly16Compressor::Choice
-LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
+EchosRelCompressor::Choice EchosRelCompressor::Choose(double value) const {
   Choice best;
   best.mode = Mode::kRaw;
   best.sign = std::signbit(value);
@@ -157,13 +154,13 @@ LogSerfQtZigZagRiceOnly16Compressor::Choose(double value) const {
   return best;
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::WriteResidual(const Choice &choice) {
+void EchosRelCompressor::WriteResidual(const Choice &choice) {
   compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRice(
       choice.mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
       output_.get());
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::WriteChoice(const Choice &choice, double original) {
+void EchosRelCompressor::WriteChoice(const Choice &choice, double original) {
   switch (choice.mode) {
     case Mode::kRepeat:
       compressed_size_in_bits_ += output_->WriteBit(false);
@@ -189,7 +186,7 @@ void LogSerfQtZigZagRiceOnly16Compressor::WriteChoice(const Choice &choice, doub
   }
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::UpdateState(const Choice &choice, double original) {
+void EchosRelCompressor::UpdateState(const Choice &choice, double original) {
   if (choice.mode == Mode::kRaw) {
     if (std::isfinite(original) && original != 0) {
       previous_log_ = choice.has_original_log ? choice.original_log : std::log(std::abs(original));
@@ -207,9 +204,9 @@ void LogSerfQtZigZagRiceOnly16Compressor::UpdateState(const Choice &choice, doub
   }
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::AddValue(double value) {
+void EchosRelCompressor::AddValue(double value) {
   if (value_count_ >= block_size_) {
-    throw std::runtime_error("ZigZag RiceOnly16 Log Serf-QT block is full");
+    throw std::runtime_error("ECHOS relative block is full");
   }
   if (value_count_ == 0) WriteMetadata();
   const Choice choice = Choose(value);
@@ -218,9 +215,9 @@ void LogSerfQtZigZagRiceOnly16Compressor::AddValue(double value) {
   ++value_count_;
 }
 
-void LogSerfQtZigZagRiceOnly16Compressor::Close() {
+void EchosRelCompressor::Close() {
   if (value_count_ != block_size_) {
-    throw std::runtime_error("ZigZag RiceOnly16 Log Serf-QT block is incomplete");
+    throw std::runtime_error("ECHOS relative block is incomplete");
   }
   output_->Flush();
   compressed_bytes_ =
@@ -231,10 +228,10 @@ void LogSerfQtZigZagRiceOnly16Compressor::Close() {
   value_count_ = 0;
 }
 
-Array<uint8_t> LogSerfQtZigZagRiceOnly16Compressor::compressed_bytes() const {
+Array<uint8_t> EchosRelCompressor::compressed_bytes() const {
   return compressed_bytes_;
 }
 
-long LogSerfQtZigZagRiceOnly16Compressor::get_compressed_size_in_bits() const {
+long EchosRelCompressor::get_compressed_size_in_bits() const {
   return stored_compressed_size_in_bits_;
 }

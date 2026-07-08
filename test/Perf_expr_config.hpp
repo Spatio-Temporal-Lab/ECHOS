@@ -28,7 +28,7 @@ const static std::string kDataSetList[] = {
 const static std::string kMethodListOverall[] = {
     // "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Sprintz", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
     // "Elf", 
-    "SerfQt", "AdaptiveSerfQt", "AdaptiveSerfQt-Rice", "AdaptiveSerfQt-Rice-Bounded16", "SerfXOR"
+    "SerfQt", "ECHOS", "SerfXOR"
 };
 const static double kMaxDiffOverall = 1.0E-3;
 const static int kBlockSizeOverall = 50;
@@ -37,8 +37,7 @@ const static std::string kMethodListRel[] = {
 #ifdef SERF_ENABLE_BASELINE_SZ2
     "SZ2_Rel",
 #endif
-    "SerfXOR_Rel", "LogSerfQt_Rel", "LogSerfQt-ZigZag_Rel",
-    "LogSerfQt-ZigZag-RiceOnly16_Rel"
+    "SerfXOR_Rel", "ECHOS_Rel"
 };
 const static double kMaxDiffRel[] = {
     0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5
@@ -46,8 +45,7 @@ const static double kMaxDiffRel[] = {
 const static int kBlockSizeRel = kBlockSizeOverall;
 // Param experiment (abs max_diff) config
 const static std::string kMethodListParamAbsMaxDiff[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "AdaptiveSerfQt", "AdaptiveSerfQt-Rice",
-    "AdaptiveSerfQt-Rice-Bounded16", "SerfXOR", "Sprintz"
+    "SZ2", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "Sprintz"
 };
 const static int kBlockSizeParamAbsMaxDiff = kBlockSizeOverall;
 const static double kMaxDiffList[] = {
@@ -55,8 +53,7 @@ const static double kMaxDiffList[] = {
     1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
 // Param experiment (block size) config
 const static std::string kMethodListParamBlockSize[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "AdaptiveSerfQt", "AdaptiveSerfQt-Rice",
-    "AdaptiveSerfQt-Rice-Bounded16", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
+    "SZ2", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
 };
 const static double kAbsMaxDiffParamBlockSize = kMaxDiffOverall;
 const static int kBlockSizeList[] = {50, 100, 200, 400, 600, 800, 1000};
@@ -82,8 +79,7 @@ const static std::string kDataSetListTSBS[] = {
 };
 const static std::string kMethodListTSBS[] = {
     "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Sprintz", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
-    "Elf", "SerfQt", "AdaptiveSerfQt", "AdaptiveSerfQt-Rice",
-    "AdaptiveSerfQt-Rice-Bounded16", "SerfXOR"
+    "Elf", "SerfQt", "ECHOS", "SerfXOR"
 };
 const static int kBlockSizeTSBS = kBlockSizeOverall;
 const static double kMaxDiffTSBS = kMaxDiffOverall;

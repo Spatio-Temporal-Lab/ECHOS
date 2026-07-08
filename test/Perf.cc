@@ -583,9 +583,9 @@ void PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff, int 
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -622,9 +622,9 @@ void PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int b
     std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -636,12 +636,12 @@ void PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int b
   ResetFileStream(data_set_input_stream_ref);
 }
 
-void PerfAdaptiveSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
-                        const std::string &data_set, ExprTable &table_to_insert) {
+void PerfEchosAbs(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
 
-  AdaptiveSerfQtCompressor compressor(block_size, max_diff);
-  AdaptiveSerfQtDecompressor decompressor;
+  EchosAbsCompressor compressor(block_size, max_diff);
+  EchosAbsDecompressor decompressor;
 
   int block_count = 0;
   std::vector<double> original_data;
@@ -661,9 +661,9 @@ void PerfAdaptiveSerfQt(std::ifstream &data_set_input_stream_ref, double max_dif
     std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -671,16 +671,16 @@ void PerfAdaptiveSerfQt(std::ifstream &data_set_input_stream_ref, double max_dif
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("AdaptiveSerfQt", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("ECHOS", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 
-void PerfAdaptiveSerfQtRice(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
-                            const std::string &data_set, ExprTable &table_to_insert) {
+void PerfEchosRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
+                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
 
-  AdaptiveSerfQtRiceCompressor compressor(block_size, max_diff);
-  AdaptiveSerfQtRiceDecompressor decompressor;
+  EchosRelCompressor compressor(block_size, rel_diff);
+  EchosRelDecompressor decompressor;
 
   int block_count = 0;
   std::vector<double> original_data;
@@ -700,9 +700,9 @@ void PerfAdaptiveSerfQtRice(std::ifstream &data_set_input_stream_ref, double max
     std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -710,166 +710,7 @@ void PerfAdaptiveSerfQtRice(std::ifstream &data_set_input_stream_ref, double max
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(
-      std::make_pair(ExprConf("AdaptiveSerfQt-Rice", data_set, block_size, max_diff), perf_record));
-  ResetFileStream(data_set_input_stream_ref);
-}
-
-void PerfAdaptiveSerfQtRiceBounded16(std::ifstream &data_set_input_stream_ref, double max_diff,
-                                     int block_size, const std::string &data_set,
-                                     ExprTable &table_to_insert) {
-  PerfRecord perf_record;
-  AdaptiveSerfQtRiceBounded16Compressor compressor(block_size, max_diff);
-  AdaptiveSerfQtRiceBounded16Decompressor decompressor;
-  int block_count = 0;
-  std::vector<double> original_data;
-
-  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
-    ++block_count;
-    const auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value : original_data) compressor.AddValue(value);
-    compressor.Close();
-    const auto compression_end_time = std::chrono::steady_clock::now();
-
-    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
-    const Array<uint8_t> compression_output = compressor.compressed_bytes();
-    const auto decompression_start_time = std::chrono::steady_clock::now();
-    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
-    const auto decompression_end_time = std::chrono::steady_clock::now();
-
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        decompression_end_time - decompression_start_time);
-    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-  }
-
-  perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(
-      ExprConf("AdaptiveSerfQt-Rice-Bounded16", data_set, block_size, max_diff), perf_record));
-  ResetFileStream(data_set_input_stream_ref);
-}
-
-void PerfLogSerfQtRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
-                      const std::string &data_set, ExprTable &table_to_insert) {
-  PerfRecord perf_record;
-
-  LogSerfQtCompressor compressor(block_size, rel_diff);
-  LogSerfQtDecompressor decompressor;
-
-  int block_count = 0;
-  std::vector<double> original_data;
-
-  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
-    ++block_count;
-
-    auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value : original_data) compressor.AddValue(value);
-    compressor.Close();
-    auto compression_end_time = std::chrono::steady_clock::now();
-
-    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
-    Array<uint8_t> compression_output = compressor.compressed_bytes();
-
-    auto decompression_start_time = std::chrono::steady_clock::now();
-    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
-    auto decompression_end_time = std::chrono::steady_clock::now();
-
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        decompression_end_time - decompression_start_time);
-
-    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-  }
-
-  perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("LogSerfQt_Rel", data_set, block_size, rel_diff), perf_record));
-  ResetFileStream(data_set_input_stream_ref);
-}
-
-void PerfLogSerfQtZigZagRel(std::ifstream &data_set_input_stream_ref, double rel_diff,
-                            int block_size, const std::string &data_set,
-                            ExprTable &table_to_insert) {
-  PerfRecord perf_record;
-
-  LogSerfQtZigZagCompressor compressor(block_size, rel_diff);
-  LogSerfQtZigZagDecompressor decompressor;
-
-  int block_count = 0;
-  std::vector<double> original_data;
-
-  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
-    ++block_count;
-
-    auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value : original_data) compressor.AddValue(value);
-    compressor.Close();
-    auto compression_end_time = std::chrono::steady_clock::now();
-
-    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
-    Array<uint8_t> compression_output = compressor.compressed_bytes();
-
-    auto decompression_start_time = std::chrono::steady_clock::now();
-    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
-    auto decompression_end_time = std::chrono::steady_clock::now();
-
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        decompression_end_time - decompression_start_time);
-
-    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-  }
-
-  perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(
-      ExprConf("LogSerfQt-ZigZag_Rel", data_set, block_size, rel_diff), perf_record));
-  ResetFileStream(data_set_input_stream_ref);
-}
-
-void PerfLogSerfQtZigZagRiceOnly16Rel(std::ifstream &data_set_input_stream_ref,
-                                      double rel_diff, int block_size,
-                                      const std::string &data_set,
-                                      ExprTable &table_to_insert) {
-  PerfRecord perf_record;
-
-  LogSerfQtZigZagRiceOnly16Compressor compressor(block_size, rel_diff);
-  LogSerfQtZigZagRiceOnly16Decompressor decompressor;
-
-  int block_count = 0;
-  std::vector<double> original_data;
-
-  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
-    ++block_count;
-
-    auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value : original_data) compressor.AddValue(value);
-    compressor.Close();
-    auto compression_end_time = std::chrono::steady_clock::now();
-
-    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
-    Array<uint8_t> compression_output = compressor.compressed_bytes();
-
-    auto decompression_start_time = std::chrono::steady_clock::now();
-    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
-    auto decompression_end_time = std::chrono::steady_clock::now();
-
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        decompression_end_time - decompression_start_time);
-
-    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-  }
-
-  perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(
-      ExprConf("LogSerfQt-ZigZag-RiceOnly16_Rel", data_set, block_size, rel_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("ECHOS_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 #endif
@@ -900,9 +741,9 @@ void PerfDeflate(std::ifstream &data_set_input_stream_ref, double max_diff, int 
     std::vector<double> decompressed_data = deflate_decompressor.decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -941,9 +782,9 @@ void PerfLZ4(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     std::vector<double> decompressed_data = lz_4_decompressor.decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -982,9 +823,9 @@ void PerfFPC(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     std::vector<double> decompressed_data = fpc_decompressor.decompress();
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1021,9 +862,9 @@ void PerfZstd(std::ifstream &data_set_input_stream_ref, double max_diff, int blo
     ZSTD_decompress(decompression_output, block_size * sizeof(double), compression_output, compression_output_len);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1063,9 +904,9 @@ void PerfSnappy(std::ifstream &data_set_input_stream_ref, double max_diff, int b
     snappy::Uncompress(compression_output.data(), compression_output.size(), &decompression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1107,9 +948,9 @@ void PerfElf(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     delete[] decompression_output;
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1146,9 +987,9 @@ void PerfChimp128(std::ifstream &data_set_input_stream_ref, double max_diff, int
     std::vector<double> decompression_output = chimp_decompressor.decompress();
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1184,9 +1025,9 @@ void PerfGorilla(std::ifstream &data_set_input_stream_ref, double max_diff, int 
     std::vector<double> decompression_output = gorilla_decompressor.decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1223,9 +1064,9 @@ void PerfLZ77(std::ifstream &data_set_input_stream_ref, double max_diff, int blo
                       block_size * sizeof(double));
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1267,9 +1108,9 @@ void PerfMachete(std::ifstream &data_set_input_stream_ref, double max_diff, int 
                                                                             decompression_buffer);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1311,9 +1152,9 @@ void PerfSZ2(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
                                                          0, 0, block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1359,9 +1200,9 @@ void PerfSimPiece(std::ifstream &data_set_input_stream_ref, double max_diff, int
     sim_piece_decompress.decompress();
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1398,9 +1239,9 @@ void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int 
     sprintz_decompressor.decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1440,9 +1281,9 @@ void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     decompressor.decompress(compress_output_buffer, block_size, decompress_output_buffer);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1483,9 +1324,9 @@ void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
     std::vector<float> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1522,9 +1363,9 @@ void PerfSerfQt_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
     std::vector<float> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1563,9 +1404,9 @@ void PerfDeflate_32(std::ifstream &data_set_input_stream_ref, float max_diff, in
     std::vector<float> decompressed_data = deflate_decompressor.decompress32(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1604,9 +1445,9 @@ void PerfLZ4_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
     std::vector<float> decompressed_data = lz_4_decompressor.decompress32(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1643,9 +1484,9 @@ void PerfLZ77_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
                       block_size * sizeof(float));
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1684,9 +1525,9 @@ void PerfSnappy_32(std::ifstream &data_set_input_stream_ref, float max_diff, int
     snappy::Uncompress(compression_output.data(), compression_output.size(), &decompression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1723,9 +1564,9 @@ void PerfZstd_32(std::ifstream &data_set_input_stream_ref, float max_diff, int b
     ZSTD_decompress(decompression_output, block_size * sizeof(float), compression_output, compression_output_len);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1764,9 +1605,9 @@ void PerfSZ2_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
                                                          0, 0, block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1810,9 +1651,9 @@ void PerfElf_32(std::ifstream &data_set_input_stream_ref, float max_diff, int bl
     delete[] decompression_output;
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1853,9 +1694,9 @@ void PerfChimp128_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
     std::vector<float> decompression_output = chimp_decompressor.decompress();
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1896,9 +1737,9 @@ void PerfSerfXOR_Without_Shifter(std::ifstream &data_set_input_stream_ref, doubl
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1935,9 +1776,9 @@ void PerfSerfXOR_Without_OptAppr(std::ifstream &data_set_input_stream_ref, doubl
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -1974,9 +1815,9 @@ void PerfSerfXOR_Without_FastSearch(std::ifstream &data_set_input_stream_ref, do
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2018,9 +1859,9 @@ void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int b
                                                          0, 0, block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2061,9 +1902,9 @@ void PerfSerfXORRel(std::ifstream &data_set_input_stream_ref, double rel_diff, i
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2104,9 +1945,9 @@ void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2143,9 +1984,9 @@ void PerfSerfXORLambdaRel(std::ifstream &data_set_input_stream_ref, double max_d
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2185,9 +2026,9 @@ void PerfSerfXORBeta(std::ifstream &data_set_input_stream_ref, const std::string
     std::vector<double> decompressed_data = serf_xor_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2224,9 +2065,9 @@ void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string 
     std::vector<double> decompressed_data = serf_qt_decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2238,12 +2079,12 @@ void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string 
   ResetFileStream(data_set_input_stream_ref);
 }
 
-void PerfAdaptiveSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
-                            int block_size, int beta, ExprTable &table_to_insert) {
+void PerfEchosAbsBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set,
+                      double max_diff, int block_size, int beta, ExprTable &table_to_insert) {
   PerfRecord perf_record;
 
-  AdaptiveSerfQtCompressor compressor(block_size, max_diff);
-  AdaptiveSerfQtDecompressor decompressor;
+  EchosAbsCompressor compressor(block_size, max_diff);
+  EchosAbsDecompressor decompressor;
 
   int block_count = 0;
   std::vector<double> original_data;
@@ -2263,9 +2104,9 @@ void PerfAdaptiveSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std:
     std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2273,47 +2114,7 @@ void PerfAdaptiveSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std:
   }
 
   perf_record.set_block_count(block_count);
-  table_to_insert.insert(std::make_pair(ExprConf("AdaptiveSerfQt", data_set, block_size, max_diff), perf_record));
-  ResetFileStream(data_set_input_stream_ref);
-}
-
-void PerfAdaptiveSerfQtRiceBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set,
-                                double max_diff, int block_size, int beta, ExprTable &table_to_insert) {
-  PerfRecord perf_record;
-
-  AdaptiveSerfQtRiceCompressor compressor(block_size, max_diff);
-  AdaptiveSerfQtRiceDecompressor decompressor;
-
-  int block_count = 0;
-  std::vector<double> original_data;
-
-  while ((original_data = ReadBlockUsingBeta(data_set_input_stream_ref, block_size, beta)).size() == block_size) {
-    ++block_count;
-
-    auto compression_start_time = std::chrono::steady_clock::now();
-    for (const auto &value : original_data) compressor.AddValue(value);
-    compressor.Close();
-    auto compression_end_time = std::chrono::steady_clock::now();
-
-    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
-    Array<uint8_t> compression_output = compressor.compressed_bytes();
-
-    auto decompression_start_time = std::chrono::steady_clock::now();
-    std::vector<double> decompressed_data = decompressor.Decompress(compression_output);
-    auto decompression_end_time = std::chrono::steady_clock::now();
-
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
-        decompression_end_time - decompression_start_time);
-
-    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
-    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
-  }
-
-  perf_record.set_block_count(block_count);
-  table_to_insert.insert(
-      std::make_pair(ExprConf("AdaptiveSerfQt-Rice", data_set, block_size, max_diff), perf_record));
+  table_to_insert.insert(std::make_pair(ExprConf("ECHOS", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 #endif
@@ -2347,9 +2148,9 @@ void PerfElfBeta(std::ifstream &data_set_input_stream_ref, const std::string &da
     delete[] decompression_output;
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
@@ -2376,10 +2177,7 @@ TEST(Perf, Overall) {
 #ifdef SERF_ENABLE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
-    PerfAdaptiveSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
-    PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
-    PerfAdaptiveSerfQtRiceBounded16(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set,
-                                   expr_table_overall);
+    PerfEchosAbs(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_MACHETE
     PerfMachete(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
@@ -2449,10 +2247,7 @@ TEST(Perf, ParamAbsMaxDiff) {
     for (const auto &max_diff : kMaxDiffList) {
       PerfSerfXOR(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
-      PerfAdaptiveSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
-      PerfAdaptiveSerfQtRice(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
-      PerfAdaptiveSerfQtRiceBounded16(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff,
-                                     data_set, expr_table_abs_diff);
+      PerfEchosAbs(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSimPiece(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSZ2(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfMachete(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
@@ -2477,21 +2272,11 @@ TEST(Perf, ParamBlockSize) {
     for (const auto & block_size : kBlockSizeList) {
       PerfSerfXOR(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSerfQt(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
-      PerfAdaptiveSerfQt(data_input_stream,
-                         kAbsMaxDiffParamBlockSize,
-                         block_size,
-                         data_set,
-                         expr_table_block_size);
-      PerfAdaptiveSerfQtRice(data_input_stream,
-                             kAbsMaxDiffParamBlockSize,
-                             block_size,
-                             data_set,
-                             expr_table_block_size);
-      PerfAdaptiveSerfQtRiceBounded16(data_input_stream,
-                                      kAbsMaxDiffParamBlockSize,
-                                      block_size,
-                                      data_set,
-                                      expr_table_block_size);
+      PerfEchosAbs(data_input_stream,
+                   kAbsMaxDiffParamBlockSize,
+                   block_size,
+                   data_set,
+                   expr_table_block_size);
       PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
@@ -2521,10 +2306,7 @@ TEST(Perf, Rel) {
 #ifdef SERF_ENABLE_BASELINE_SZ2
       PerfSZ2Rel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
 #endif
-      PerfLogSerfQtRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
-      PerfLogSerfQtZigZagRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
-      PerfLogSerfQtZigZagRiceOnly16Rel(data_input_stream, rel_diff, kBlockSizeRel, data_set,
-                                       expr_table_rel);
+      PerfEchosRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
     }
 
     data_input_stream.close();
@@ -2650,26 +2432,18 @@ TEST(Perf, Beta) {
     ExprTable expr_table_beta;
     PerfSerfXORBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
     PerfSerfQtBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
-    PerfAdaptiveSerfQtBeta(data_set_input_stream,
-                           chosen_data_set,
-                           kMaxDiffOverall,
-                           kBlockSizeOverall,
-                           beta,
-                           expr_table_beta);
-    PerfAdaptiveSerfQtRiceBeta(data_set_input_stream,
-                               chosen_data_set,
-                               kMaxDiffOverall,
-                               kBlockSizeOverall,
-                               beta,
-                               expr_table_beta);
+    PerfEchosAbsBeta(data_set_input_stream,
+                     chosen_data_set,
+                     kMaxDiffOverall,
+                     kBlockSizeOverall,
+                     beta,
+                     expr_table_beta);
 #ifdef SERF_ENABLE_BASELINE_ELF
     PerfElfBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
 #endif
     ExprConf serf_xor_conf = ExprConf("SerfXOR", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
     ExprConf serf_qt_conf = ExprConf("SerfQt", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
-    ExprConf adaptive_serf_qt_conf = ExprConf("AdaptiveSerfQt", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
-    ExprConf adaptive_serf_qt_rice_conf =
-        ExprConf("AdaptiveSerfQt-Rice", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
+    ExprConf echos_conf = ExprConf("ECHOS", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
 #ifdef SERF_ENABLE_BASELINE_ELF
     ExprConf elf_conf = ExprConf("Elf", chosen_data_set, kBlockSizeOverall, kMaxDiffOverall);
 #endif
@@ -2679,12 +2453,8 @@ TEST(Perf, Beta) {
     result_output << beta << "," << "SerfQt,"
                   << expr_table_beta.find(serf_qt_conf)->second.CalCompressionRatio(serf_qt_conf)
                   << std::endl;
-    result_output << beta << "," << "AdaptiveSerfQt,"
-                  << expr_table_beta.find(adaptive_serf_qt_conf)->second.CalCompressionRatio(adaptive_serf_qt_conf)
-                  << std::endl;
-    result_output << beta << "," << "AdaptiveSerfQt-Rice,"
-                  << expr_table_beta.find(adaptive_serf_qt_rice_conf)->second.CalCompressionRatio(
-                         adaptive_serf_qt_rice_conf)
+    result_output << beta << "," << "ECHOS,"
+                  << expr_table_beta.find(echos_conf)->second.CalCompressionRatio(echos_conf)
                   << std::endl;
 #ifdef SERF_ENABLE_BASELINE_ELF
     result_output << beta << "," << "Elf,"
@@ -2708,10 +2478,7 @@ TEST(Perf, TSBS) {
     // Lossy Compression
     PerfSerfXOR(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
-    PerfAdaptiveSerfQt(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
-    PerfAdaptiveSerfQtRice(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
-    PerfAdaptiveSerfQtRiceBounded16(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set,
-                                   expr_table_tsbs);
+    PerfEchosAbs(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfMachete(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSZ2(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
     PerfSimPiece(data_input_stream, kMaxDiffTSBS, kBlockSizeTSBS, data_set, expr_table_tsbs);
@@ -2737,3 +2504,4 @@ TEST(Perf, TSBS) {
   GenTSBSTableDT(expr_table_tsbs);
 }
 #endif
+

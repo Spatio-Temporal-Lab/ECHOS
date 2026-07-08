@@ -148,10 +148,8 @@ src
 - **`net_serf_qt_compressor`**: Network-based compressor using the *Serf-Qt* algorithm.
 - **`net_serf_xor_compressor`**: Network-based compressor using the *Serf-XOR* algorithm.
 - **`serf_qt_compressor.`**: Standard *Serf-Qt* compression implementation.
-- **`adaptive_serf_qt_compressor`**: Strictly streaming Serf-Qt variant that selects Elias Gamma or Delta coding from synchronized historical coding costs and uses a finite-value-safe escape code.
-- **`adaptive_serf_qt_rice_compressor`**: Strictly streaming Serf-Qt variant that implicitly selects Gamma, Delta, or Rice coding from deterministically decayed historical costs.
-- **`adaptive_serf_qt_rice_bounded16_compressor`**: Speed-oriented streaming baseline using only Gamma, Delta, and bounded Rice with quotient cap 16.
-- **`log_serf_qt_compressor`**: Strictly streaming logarithmic-domain Serf-Qt variant with point-wise relative error guarantees.
+- **`echos_abs_compressor`**: ECHOS compressor for absolute error bounds.
+- **`echos_rel_compressor`**: ECHOS compressor for relative error bounds in the logarithmic domain.
 - **`serf_xor_compressor`**: Standard *Serf-XOR* compression implementation.
 - **`serf_xor_compressor_no_fast_search`**: *Serf-XOR* compressor without fast search optimizations.
 - **`serf_xor_compressor_no_opt_appr`**: *Serf-XOR* compressor without optimized approximations.
@@ -167,9 +165,8 @@ src
 - **`net_serf_qt_decompressor`**: Network-based decompressor using the *Serf-Qt* algorithm.
 - **`net_serf_xor_decompressor`**: Network-based decompressor using the *Serf-XOR* algorithm.
 - **`serf_qt_decompressor`**: Standard *Serf-Qt* decompression implementation.
-- **`adaptive_serf_qt_decompressor`**: Decoder for the synchronized online adaptive Serf-Qt format.
-- **`adaptive_serf_qt_rice_decompressor`**: Decoder for the synchronized decayed-cost Gamma/Delta/Rice format.
-- **`log_serf_qt_decompressor`**: Decoder for the relative-error logarithmic Serf-Qt format.
+- **`echos_abs_decompressor`**: ECHOS decoder for absolute error bounds.
+- **`echos_rel_decompressor`**: ECHOS decoder for relative error bounds.
 - **`serf_xor_decompressor`**: Standard *Serf-XOR* decompression implementation.
 
 #### Decompressor (32-bit)
@@ -234,65 +231,39 @@ Data should be found in `{$source_code_dir}/test` with file name pattern `{$expe
 
 `dt` is the abbreviation for `decompression time`.
 
-### Streaming Serf-Qt Extensions
+### ECHOS Streaming Codecs
 
-The Serf-Qt extensions make every coding decision inside `AddValue` using only the current
-value and decoder-synchronized historical state. They do not inspect or buffer future values.
-`Close()` only finalizes the current encoded block: prediction state is preserved across blocks.
+ECHOS makes every coding decision inside `AddValue` using only the current value and
+decoder-synchronized historical state. It does not inspect or buffer future values. `Close()` only
+finalizes the current encoded block: prediction and adaptive context are preserved across blocks.
 Reuse the same compressor/decompressor objects for one dataset stream, and construct new objects
 when starting another independent dataset.
 
-`AdaptiveSerfQt-Rice` compares Gamma, Delta, legacy Rice, and bounded Rice formats using integer
-costs that decay by `cost -= cost >> 4` before each update. Its Rice parameter is inferred from the
-synchronized decayed residual magnitude without an explicit parameter limit. Historical residual
-magnitudes are capped at `2^20` for robust adaptation, which naturally keeps the inferred parameter
-at or below 20. The bounded format directly writes quotients below 32;
-at the cap, one escape bit selects Delta residual fallback or a raw double. Compressor and
-decompressor implicitly choose between the two Rice formats from synchronized historical costs, so
-no format flag is stored. Quantization uses a double-precision fast path and falls back to
-long double only for extreme or numerically ambiguous values.
+`echos_abs_compressor` is the production absolute-error codec. It quantizes residuals against the
+last reconstructed value, ZigZag-maps signed quantization indices, and routes mapped residuals
+between Elias Delta and bounded Golomb-Rice coding with quotient cap 16. The route and Rice
+parameter are derived from synchronized, decayed coding-cost and residual-magnitude statistics, so
+no per-value encoder id or Rice parameter is stored. Values that cannot be safely quantized are
+emitted through a raw double escape.
 
-Its block metadata is also stream-adaptive. Every block starts with two flags indicating whether its
-block size and error bound differ from the previous block. The first block writes both fields; an
-unchanged later block writes only the two zero flags. `SetBlockConfig` may change either field only
-at a block boundary. No checkpoints or prediction-state snapshots are written.
+`echos_rel_compressor` is the production relative-error codec. It maps nonzero magnitudes into the
+logarithmic domain, uses a compact prefix mode code for repeat, sign-change, zero, residual, and raw
+cases, and ZigZag-maps the signed log residual before bounded Rice coding. At the Rice quotient cap,
+the stream falls back to Delta-style residual coding. The explicit zero mode reconstructs both
+positive and negative zero as canonical positive zero, while nonzero values preserve sign.
 
-`AdaptiveSerfQt-Rice-Bounded16` is a separate speed-oriented baseline. It preserves the same
-quantization, stream-adaptive metadata, cross-block prediction state, decayed historical costs, and
-natural Rice-parameter inference, but removes legacy Rice and uses one bounded Rice format with
-quotient cap 16. Gamma is removed from its implicit selection, leaving only Delta and bounded Rice.
-Its bitstream is distinct from `AdaptiveSerfQt-Rice`.
+Both codecs use stream-adaptive block metadata. Every block starts with two flags indicating whether
+its block size and error bound differ from the previous block. The first block writes both fields;
+an unchanged later block writes only the two zero flags. `SetBlockConfig` may change either field
+only at a block boundary. No checkpoints or prediction-state snapshots are written.
 
-`LogSerfQt` uses the same synchronized `cost -= cost >> 4` historical-cost selection, naturally
-bounded Rice-parameter inference, and stream-adaptive metadata in the logarithmic domain. Its
-value-level prefix jointly carries whether
-the original value sign changed
-and whether the log-quantization residual is positive, negative, or zero. The implicit
-Gamma/Delta/Rice coder therefore receives only the positive residual magnitude; positive and
-negative zero share one short code and are both reconstructed as canonical positive zero.
-The mode prefix is ordered by measured streaming frequency: repeat values use one bit, same-sign
-negative and positive residuals use two and three bits, and rarer sign-change/zero/raw modes use
-progressively longer codes.
-Selected Rice values use a bounded quotient with cap 16: common values omit the old Rice prefix,
-while a quotient reaching the cap implicitly switches to Delta.
-It caches the last recovered value so repeat values bypass logarithms, quantization, exponentiation,
-and adaptive-codec selection. Non-repeat values use a precomputed inverse quantization step,
-cached code lengths, and log-domain error validation; unary Gamma/Rice prefixes are decoded in
-word-sized chunks.
-
-`LogSerfQt-ZigZag` is a separate speed-oriented relative-error baseline. It preserves the same
-logarithmic quantization, bounded Rice selection, stream-adaptive metadata, and cross-block state,
-but ZigZag-maps signed residuals and merges positive/negative residual modes into a six-mode prefix
-tree. Gamma is removed from its implicit selection, leaving only Delta and bounded Rice. Its
-bitstream is distinct from `LogSerfQt`.
-
-Build and run their standalone correctness and benchmark programs:
+Build and run the ECHOS correctness and benchmark entry points:
 
 ```bash
-cmake -S . -B build -DSERF_ENABLE_GTEST_TARGETS=OFF
-cmake --build build --target SerfExtensionsValidation SerfExtensionsBenchmark
-./build/test/SerfExtensionsValidation
-./build/test/SerfExtensionsBenchmark test/data_set
+cmake -S . -B build -DSERF_ENABLE_GTEST_TARGETS=ON
+cmake --build build --target serf_test PerformanceProgram
+./build/test/serf_test --gtest_filter=Correctness.Echos*
+./build/test/PerformanceProgram
 ```
 
 ## :triangular_ruler:Code of Conduct
