@@ -11,9 +11,13 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 # Set parallel compilation level as 4
 set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
-# Scan and collect all source code file
-file(GLOB_RECURSE LIB_SRC *.cc)
+set(ECHOS_SRC
+        compressor/echos_abs_compressor.cc
+        compressor/echos_rel_compressor.cc
+        decompressor/echos_abs_decompressor.cc
+        decompressor/echos_rel_decompressor.cc
+        utils/output_bit_stream.cc)
 
-add_library(serf SHARED ${LIB_SRC})
+add_library(serf SHARED ${ECHOS_SRC})
 
-target_include_directories(serf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(serf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

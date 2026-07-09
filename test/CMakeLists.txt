@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD 17)
 # ---------------------------------------------------------------------------
 # Manual build switches: change ON/OFF here.
 # ---------------------------------------------------------------------------
-set(SERF_ENABLE_SERF ON)
+set(SERF_ENABLE_ECHOS ON)
+set(SERF_ENABLE_BASELINE_SERF ON)
 
 set(SERF_ENABLE_BASELINE_DEFLATE OFF)
 set(SERF_ENABLE_BASELINE_FPC OFF)
@@ -28,6 +29,10 @@ set(SERF_ENABLE_BASELINE_SZ_ADT OFF)
 
 if(SERF_ENABLE_BASELINE_DEFLATE)
     add_subdirectory(baselines/deflate)
+endif()
+
+if(SERF_ENABLE_BASELINE_SERF)
+    add_subdirectory(baselines/serf)
 endif()
 
 if(SERF_ENABLE_BASELINE_FPC)
@@ -117,7 +122,7 @@ message(STATUS "[SelfCheck] Loaded GoogleTest module")
 # Scan and collect all test file
 file(GLOB_RECURSE TEST_SRC *_test.cc)
 
-if(NOT SERF_ENABLE_SERF)
+if(NOT SERF_ENABLE_ECHOS AND NOT SERF_ENABLE_BASELINE_SERF)
     list(FILTER TEST_SRC EXCLUDE REGEX ".*/serf_test\\.cc$")
 endif()
 if(NOT SERF_ENABLE_BASELINE_DEFLATE)
@@ -160,6 +165,9 @@ foreach(F ${TEST_SRC})
     add_executable(${TEST_PROG} ${F})
     string(REPLACE "_test" "" LIB_NAME ${TEST_PROG})
     target_link_libraries(${TEST_PROG} PRIVATE ${LIB_NAME} GTest::gtest_main)
+    if(TEST_PROG STREQUAL "serf_test" AND SERF_ENABLE_BASELINE_SERF)
+        target_link_libraries(${TEST_PROG} PRIVATE serf_baseline)
+    endif()
     gtest_discover_tests(${TEST_PROG})
 endforeach(F)
 
@@ -167,8 +175,11 @@ add_executable(PerformanceProgram Perf.cc)
 
 set(PERFORMANCE_PROGRAM_LIBS GTest::gtest_main)
 
-if(SERF_ENABLE_SERF)
+if(SERF_ENABLE_ECHOS)
     list(APPEND PERFORMANCE_PROGRAM_LIBS serf)
+endif()
+if(SERF_ENABLE_BASELINE_SERF)
+    list(APPEND PERFORMANCE_PROGRAM_LIBS serf_baseline)
 endif()
 if(SERF_ENABLE_BASELINE_CHIMP128)
     list(APPEND PERFORMANCE_PROGRAM_LIBS chimp)

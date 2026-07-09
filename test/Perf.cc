@@ -557,7 +557,7 @@ void GenAblationTableDT(ExprTable &expr_table) {
   expr_table_output_stream.close();
 }
 
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXOR(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -635,7 +635,9 @@ void PerfSerfQt(std::ifstream &data_set_input_stream_ref, double max_diff, int b
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_ECHOS
 void PerfEchosAbs(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                   const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1298,7 +1300,7 @@ void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
 
 // Single Precision
 
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1711,7 +1713,7 @@ void PerfChimp128_32(std::ifstream &data_set_input_stream_ref, float max_diff, i
 
 // Ablation
 
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXOR_Without_Shifter(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                                  const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1876,7 +1878,7 @@ void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int b
 }
 #endif
 
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXORRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -1919,7 +1921,7 @@ void PerfSerfXORRel(std::ifstream &data_set_input_stream_ref, double rel_diff, i
 
 // Lambda Expr
 
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXORLambda(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                        const std::string &data_set, int lambda, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -2000,7 +2002,7 @@ void PerfSerfXORLambdaRel(std::ifstream &data_set_input_stream_ref, double max_d
 #endif
 
 // Beta experiment
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXORBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set, double max_diff,
                      int block_size, int beta, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -2078,7 +2080,9 @@ void PerfSerfQtBeta(std::ifstream &data_set_input_stream_ref, const std::string 
   table_to_insert.insert(std::make_pair(ExprConf("SerfQt", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
+#endif
 
+#ifdef SERF_ENABLE_ECHOS
 void PerfEchosAbsBeta(std::ifstream &data_set_input_stream_ref, const std::string &data_set,
                       double max_diff, int block_size, int beta, ExprTable &table_to_insert) {
   PerfRecord perf_record;
@@ -2174,9 +2178,11 @@ TEST(Perf, Overall) {
     }
 
     // Lossy Compression
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
     PerfSerfQt(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_ECHOS
     PerfEchosAbs(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_MACHETE
@@ -2211,7 +2217,7 @@ TEST(Perf, Overall) {
 #ifdef SERF_ENABLE_BASELINE_LZ4
     PerfLZ4(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
-#ifdef SERF_ENABLE_SERF
+#ifdef SERF_ENABLE_BASELINE_SERF
     PerfSerfXOR(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_LZ77
@@ -2302,11 +2308,15 @@ TEST(Perf, Rel) {
     }
 
     for (const auto &rel_diff : kMaxDiffRel) {
+#ifdef SERF_ENABLE_BASELINE_SERF
       PerfSerfXORRel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
+#endif
 #ifdef SERF_ENABLE_BASELINE_SZ2
       PerfSZ2Rel(data_input_stream, rel_diff, kBlockSizeOverall, data_set, expr_table_rel);
 #endif
+#ifdef SERF_ENABLE_ECHOS
       PerfEchosRel(data_input_stream, rel_diff, kBlockSizeRel, data_set, expr_table_rel);
+#endif
     }
 
     data_input_stream.close();
@@ -2430,14 +2440,18 @@ TEST(Perf, Beta) {
 
   for (int beta = min_beta; beta <= max_beta; beta++) {
     ExprTable expr_table_beta;
+#ifdef SERF_ENABLE_BASELINE_SERF
     PerfSerfXORBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
     PerfSerfQtBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
+#endif
+#ifdef SERF_ENABLE_ECHOS
     PerfEchosAbsBeta(data_set_input_stream,
                      chosen_data_set,
                      kMaxDiffOverall,
                      kBlockSizeOverall,
                      beta,
                      expr_table_beta);
+#endif
 #ifdef SERF_ENABLE_BASELINE_ELF
     PerfElfBeta(data_set_input_stream, chosen_data_set, kMaxDiffOverall, kBlockSizeOverall, beta, expr_table_beta);
 #endif

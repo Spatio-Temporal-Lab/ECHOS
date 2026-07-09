@@ -1,13 +1,13 @@
 #include "utils/output_bit_stream.h"
 
-EchosOutputBitStream::EchosOutputBitStream(uint32_t buffer_size) {
+OutputBitStream::OutputBitStream(uint32_t buffer_size) {
   data_ = Array<uint32_t>(buffer_size / 4 + 1);
   buffer_ = 0;
   cursor_ = 0;
   bit_in_buffer_ = 0;
 }
 
-uint32_t EchosOutputBitStream::Write(uint64_t content, uint32_t len) {
+uint32_t OutputBitStream::Write(uint64_t content, uint32_t len) {
   content <<= (64 - len);
   buffer_ |= (content >> bit_in_buffer_);
   bit_in_buffer_ += len;
@@ -19,7 +19,7 @@ uint32_t EchosOutputBitStream::Write(uint64_t content, uint32_t len) {
   return len;
 }
 
-uint32_t EchosOutputBitStream::WriteLong(uint64_t content, uint64_t len) {
+uint32_t OutputBitStream::WriteLong(uint64_t content, uint64_t len) {
   if (len == 0) return 0;
   if (len > 32) {
     Write(content >> (len - 32), 32);
@@ -29,19 +29,18 @@ uint32_t EchosOutputBitStream::WriteLong(uint64_t content, uint64_t len) {
   return Write(content, len);
 }
 
-uint32_t EchosOutputBitStream::WriteInt(uint32_t content, uint32_t len) {
+uint32_t OutputBitStream::WriteInt(uint32_t content, uint32_t len) {
   return Write(static_cast<uint64_t>(content), len);
 }
 
-Array<uint8_t> EchosOutputBitStream::GetUsedBuffer(uint32_t len) {
+Array<uint8_t> OutputBitStream::GetBuffer(uint32_t len) {
   Array<uint8_t> ret(len);
-  const uint32_t word_count = (len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-  for (uint32_t index = 0; index < word_count; ++index) data_[index] = htobe32(data_[index]);
+  for (int index = 0; index < data_.length(); ++index) data_[index] = htobe32(data_[index]);
   __builtin_memcpy(ret.begin(), data_.begin(), len);
   return ret;
 }
 
-void EchosOutputBitStream::Flush() {
+void OutputBitStream::Flush() {
   if (bit_in_buffer_) {
     data_[cursor_++] = buffer_ >> 32;
     buffer_ = 0;
@@ -49,7 +48,7 @@ void EchosOutputBitStream::Flush() {
   }
 }
 
-void EchosOutputBitStream::Refresh() {
+void OutputBitStream::Refresh() {
   cursor_ = 0;
   bit_in_buffer_ = 0;
   buffer_ = 0;

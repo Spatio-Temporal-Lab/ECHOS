@@ -6,9 +6,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include "input_bit_stream.h"
-#include "output_bit_stream.h"
-
 namespace AdaptiveQtCodec {
 
 enum class IntegerCodec : uint32_t {
@@ -328,124 +325,6 @@ inline void UpdateAdaptiveRiceFormatState(uint64_t mapped,
   state->sample_count = DecayAndAdd(state->sample_count, 1);
 }
 
-inline void WriteZeros(uint64_t count, OutputBitStream *output) {
-  while (count >= 32) {
-    output->WriteInt(0, 32);
-    count -= 32;
-  }
-  if (count > 0) output->WriteInt(0, static_cast<uint32_t>(count));
-}
-
-inline uint64_t EncodeGamma(uint64_t positive, OutputBitStream *output) {
-  const uint32_t log = FloorLog2(positive);
-  WriteZeros(log, output);
-  output->WriteLong(positive, log + 1);
-  return 2ULL * log + 1;
-}
-
-inline uint64_t DecodeGamma(InputBitStream *input) {
-  const uint32_t zeros = static_cast<uint32_t>(input->ReadUnaryZeros(64));
-  if (zeros == 0) return 1;
-  return (1ULL << zeros) | input->ReadLong(zeros);
-}
-
-inline uint64_t EncodeDelta(uint64_t positive, OutputBitStream *output) {
-  const uint32_t value_bits = FloorLog2(positive) + 1;
-  uint64_t written = EncodeGamma(value_bits, output);
-  if (value_bits > 1) written += output->WriteLong(positive, value_bits - 1);
-  return written;
-}
-
-inline uint64_t DecodeDelta(InputBitStream *input) {
-  const uint64_t value_bits = DecodeGamma(input);
-  if (value_bits == 0 || value_bits > 64) throw std::runtime_error("Invalid Elias delta code");
-  if (value_bits == 1) return 1;
-  return (1ULL << (value_bits - 1)) | input->ReadLong(value_bits - 1);
-}
-
-inline uint64_t EncodeRice(uint64_t value, uint32_t parameter, OutputBitStream *output) {
-  const uint64_t quotient = value >> parameter;
-  WriteZeros(quotient, output);
-  output->WriteBit(true);
-  if (parameter > 0) output->WriteLong(value, parameter);
-  return quotient + 1 + parameter;
-}
-
-inline uint64_t DecodeRice(uint32_t parameter, InputBitStream *input) {
-  const uint64_t quotient =
-      input->ReadUnaryZeros(std::numeric_limits<uint64_t>::max() >> parameter);
-  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
-  return (quotient << parameter) | remainder;
-}
-
-inline uint64_t EncodeCappedRice(uint64_t mapped, uint32_t parameter, uint32_t quotient_cap,
-                                 OutputBitStream *output) {
-  const uint64_t quotient = (mapped - 1) >> parameter;
-  if (quotient < quotient_cap) {
-    WriteZeros(quotient, output);
-    output->WriteBit(true);
-    if (parameter > 0) output->WriteLong(mapped - 1, parameter);
-    return quotient + 1 + parameter;
-  }
-  WriteZeros(quotient_cap, output);
-  return quotient_cap + EncodeDelta(mapped, output);
-}
-
-inline uint64_t DecodeCappedRice(uint32_t parameter, uint32_t quotient_cap, InputBitStream *input) {
-  const uint64_t quotient = input->ReadUnaryZerosOrCap(quotient_cap);
-  if (quotient == quotient_cap) return DecodeDelta(input);
-  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
-  return ((quotient << parameter) | remainder) + 1;
-}
-
-inline uint64_t EncodeCappedRiceWithRaw(uint64_t mapped, uint32_t parameter,
-                                       uint32_t quotient_cap, OutputBitStream *output) {
-  const uint64_t quotient = (mapped - 1) >> parameter;
-  if (quotient < quotient_cap) {
-    WriteZeros(quotient, output);
-    output->WriteBit(true);
-    if (parameter > 0) output->WriteLong(mapped - 1, parameter);
-    return quotient + 1 + parameter;
-  }
-  WriteZeros(quotient_cap, output);
-  output->WriteBit(false);
-  return quotient_cap + 1 + EncodeDelta(mapped, output);
-}
-
-inline uint64_t EncodeCappedRiceWithRaw(uint64_t mapped, uint32_t parameter,
-                                       OutputBitStream *output) {
-  return EncodeCappedRiceWithRaw(mapped, parameter, kAdaptiveRiceFormatQuotientCap, output);
-}
-
-inline uint64_t WriteCappedRiceRaw(uint32_t quotient_cap, OutputBitStream *output) {
-  WriteZeros(quotient_cap, output);
-  output->WriteBit(true);
-  return quotient_cap + 1;
-}
-
-inline uint64_t WriteCappedRiceRaw(OutputBitStream *output) {
-  return WriteCappedRiceRaw(kAdaptiveRiceFormatQuotientCap, output);
-}
-
-inline uint64_t DecodeCappedRiceWithRaw(uint32_t parameter, uint32_t quotient_cap, bool *raw,
-                                        InputBitStream *input) {
-  *raw = false;
-  const uint64_t quotient = input->ReadUnaryZerosOrCap(quotient_cap);
-  if (quotient == quotient_cap) {
-    if (input->ReadBit()) {
-      *raw = true;
-      return 1;
-    }
-    return DecodeDelta(input);
-  }
-  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
-  return ((quotient << parameter) | remainder) + 1;
-}
-
-inline uint64_t DecodeCappedRiceWithRaw(uint32_t parameter, bool *raw, InputBitStream *input) {
-  return DecodeCappedRiceWithRaw(parameter, kAdaptiveRiceFormatQuotientCap, raw, input);
-}
-
 inline uint64_t EncodedLength(uint64_t mapped, IntegerCodec codec, uint32_t rice_parameter) {
   switch (codec) {
     case IntegerCodec::kGamma:
@@ -458,35 +337,6 @@ inline uint64_t EncodedLength(uint64_t mapped, IntegerCodec codec, uint32_t rice
       return 64;
   }
   throw std::runtime_error("Unknown integer codec");
-}
-
-inline uint64_t EncodeMapped(uint64_t mapped, IntegerCodec codec, uint32_t rice_parameter,
-                             OutputBitStream *output) {
-  switch (codec) {
-    case IntegerCodec::kGamma:
-      return EncodeGamma(mapped, output);
-    case IntegerCodec::kDelta:
-      return EncodeDelta(mapped, output);
-    case IntegerCodec::kRice:
-      return EncodeRice(mapped - 1, rice_parameter, output);
-    case IntegerCodec::kRaw:
-      break;
-  }
-  throw std::runtime_error("Raw values are not integer-coded");
-}
-
-inline uint64_t DecodeMapped(IntegerCodec codec, uint32_t rice_parameter, InputBitStream *input) {
-  switch (codec) {
-    case IntegerCodec::kGamma:
-      return DecodeGamma(input);
-    case IntegerCodec::kDelta:
-      return DecodeDelta(input);
-    case IntegerCodec::kRice:
-      return DecodeRice(rice_parameter, input) + 1;
-    case IntegerCodec::kRaw:
-      break;
-  }
-  throw std::runtime_error("Raw values are not integer-coded");
 }
 
 }  // namespace AdaptiveQtCodec

@@ -1,14 +1,14 @@
-#ifndef ECHOS_OUTPUT_BIT_STREAM_H
-#define ECHOS_OUTPUT_BIT_STREAM_H
+#ifndef SERF_OUTPUT_BIT_STREAM_H
+#define SERF_OUTPUT_BIT_STREAM_H
 
 #include <cstdint>
 
 #include "array.h"
 #include "endian_compat.h"
 
-class EchosOutputBitStream {
+class OutputBitStream {
  public:
-  explicit EchosOutputBitStream(uint32_t buffer_size);
+  explicit OutputBitStream(uint32_t buffer_size);
 
   uint32_t Write(uint64_t content, uint32_t len);
 
@@ -28,7 +28,7 @@ class EchosOutputBitStream {
 
   void Flush();
 
-  Array<uint8_t> GetUsedBuffer(uint32_t len);
+  Array<uint8_t> GetBuffer(uint32_t len);
 
   void Refresh();
 
@@ -39,4 +39,4 @@ class EchosOutputBitStream {
   uint64_t buffer_;
 };
 
-#endif  // ECHOS_OUTPUT_BIT_STREAM_H
+#endif  // SERF_OUTPUT_BIT_STREAM_H

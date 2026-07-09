@@ -4,6 +4,6 @@ project(sfz)
 
 add_executable(sfz cmd_interface.cc)
 
-target_include_directories(sfz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+target_include_directories(sfz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../test/baselines/serf)
 
-target_link_libraries(sfz PRIVATE serf)
+target_link_libraries(sfz PRIVATE serf_baseline)

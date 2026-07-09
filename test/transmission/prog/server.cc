@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "serf/decompressor/net_serf_xor_decompressor.h"
+#include "baselines/serf/decompressor/net_serf_xor_decompressor.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 1024

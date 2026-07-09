@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <fstream>
 
-#include "serf/compressor/net_serf_xor_compressor.h"
+#include "baselines/serf/compressor/net_serf_xor_compressor.h"
 
 #define PORT 8080
 #define SERVER_ADDRESS "127.0.0.1"

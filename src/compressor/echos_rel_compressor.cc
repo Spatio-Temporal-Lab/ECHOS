@@ -1,6 +1,5 @@
 #include "compressor/echos_rel_compressor.h"
 
-#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -38,17 +37,86 @@ bool QuantizeLog(double magnitude, double prediction, double log_max_diff, doubl
   return log_error >= lower_log_error_bound && log_error <= upper_log_error_bound;
 }
 
+inline uint32_t FloorLog2NonZero(uint64_t value) {
+#if defined(__GNUC__) || defined(__clang__)
+  return 63U - static_cast<uint32_t>(__builtin_clzll(value));
+#else
+  uint32_t result = 0;
+  while (value >>= 1) ++result;
+  return result;
+#endif
+}
+
+inline uint64_t DecayAndAddFast(uint64_t cost, uint64_t length) {
+  return cost - (cost >> AdaptiveQtCodec::kAdaptiveRiceDecayShift) + length;
+}
+
+inline void WriteZerosFast(uint64_t count, EchosOutputBitStream *output) {
+  while (count >= 32) {
+    output->WriteInt(0, 32);
+    count -= 32;
+  }
+  if (count > 0) output->WriteInt(0, static_cast<uint32_t>(count));
+}
+
 uint32_t EstimateRiceParameter(uint64_t magnitude_sum, uint64_t sample_count) {
   if (magnitude_sum == 0 || sample_count == 0) return 0;
-  const uint32_t magnitude_log = AdaptiveQtCodec::FloorLog2(magnitude_sum);
-  const uint32_t sample_log = AdaptiveQtCodec::FloorLog2(sample_count);
+  const uint32_t magnitude_log = FloorLog2NonZero(magnitude_sum);
+  const uint32_t sample_log = FloorLog2NonZero(sample_count);
   return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
 }
 
+inline uint64_t GammaLengthFast(uint64_t positive) {
+  return 2ULL * FloorLog2NonZero(positive) + 1;
+}
+
+inline uint64_t DeltaLengthFast(uint64_t positive) {
+  const uint64_t value_bits = FloorLog2NonZero(positive) + 1;
+  return GammaLengthFast(value_bits) + value_bits - 1;
+}
+
+inline uint64_t CappedRiceLengthFast(uint64_t mapped, uint32_t rice_parameter) {
+  const uint64_t quotient = (mapped - 1) >> rice_parameter;
+  return quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap
+             ? quotient + rice_parameter + 1
+             : AdaptiveQtCodec::kBoundedRiceQuotientCap + DeltaLengthFast(mapped);
+}
+
+inline uint64_t EncodeGammaFast(uint64_t positive, EchosOutputBitStream *output) {
+  const uint32_t log = FloorLog2NonZero(positive);
+  WriteZerosFast(log, output);
+  output->WriteLong(positive, log + 1);
+  return 2ULL * log + 1;
+}
+
+inline uint64_t EncodeDeltaFast(uint64_t positive, EchosOutputBitStream *output) {
+  const uint32_t value_bits = FloorLog2NonZero(positive) + 1;
+  uint64_t written = EncodeGammaFast(value_bits, output);
+  if (value_bits > 1) written += output->WriteLong(positive, value_bits - 1);
+  return written;
+}
+
+inline uint64_t EncodeCappedRiceFast(uint64_t mapped, uint32_t parameter,
+                                     EchosOutputBitStream *output) {
+  const uint64_t quotient = (mapped - 1) >> parameter;
+  if (quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap) {
+    WriteZerosFast(quotient, output);
+    output->WriteBit(true);
+    if (parameter > 0) output->WriteLong(mapped - 1, parameter);
+    return quotient + 1 + parameter;
+  }
+  WriteZerosFast(AdaptiveQtCodec::kBoundedRiceQuotientCap, output);
+  return AdaptiveQtCodec::kBoundedRiceQuotientCap + EncodeDeltaFast(mapped, output);
+}
+
 void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t *sample_count) {
-  *magnitude_sum = AdaptiveQtCodec::DecayAndAdd(
-      *magnitude_sum, std::min(mapped - 1, AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap));
-  *sample_count = AdaptiveQtCodec::DecayAndAdd(*sample_count, 1);
+  const uint64_t magnitude = mapped - 1;
+  *magnitude_sum = DecayAndAddFast(
+      *magnitude_sum,
+      magnitude < AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap
+          ? magnitude
+          : AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap);
+  *sample_count = DecayAndAddFast(*sample_count, 1);
 }
 
 }  // namespace
@@ -57,7 +125,7 @@ EchosRelCompressor::EchosRelCompressor(int block_size, double relative_error_bou
     : block_size_(block_size) {
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   UpdateErrorConfig(relative_error_bound);
-  output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
+  output_ = std::make_unique<EchosOutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
 }
 
 void EchosRelCompressor::UpdateErrorConfig(double relative_error_bound) {
@@ -78,7 +146,7 @@ void EchosRelCompressor::SetBlockConfig(int block_size, double relative_error_bo
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   block_size_ = block_size;
   UpdateErrorConfig(relative_error_bound);
-  output_ = std::make_unique<OutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
+  output_ = std::make_unique<EchosOutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
 }
 
 void EchosRelCompressor::WriteMetadata() {
@@ -95,123 +163,75 @@ void EchosRelCompressor::WriteMetadata() {
   metadata_initialized_ = true;
 }
 
-EchosRelCompressor::Choice EchosRelCompressor::Choose(double value) const {
-  Choice best;
-  best.mode = Mode::kRaw;
-  best.sign = std::signbit(value);
-  best.has_original_log = false;
-  best.bits = 69;
-
-  if (value == 0) {
-    best.mode = Mode::kZero;
-    best.bits = 5;
-    return best;
-  }
-
-  const double magnitude = std::abs(value);
-  if (std::isfinite(value) && best.sign == previous_sign_ &&
-      std::abs(previous_value_ - value) <= relative_error_bound_ * magnitude) {
-    best.mode = Mode::kRepeat;
-    best.bits = 1;
-    return best;
-  }
-  if (std::isfinite(value) && best.sign != previous_sign_ &&
-      std::abs(std::abs(previous_value_) - magnitude) <= relative_error_bound_ * magnitude) {
-    best.mode = Mode::kChangedSignZeroResidual;
-    best.recovered_log = previous_log_;
-    best.recovered_value = best.sign ? -std::abs(previous_value_) : std::abs(previous_value_);
-    best.bits = 4;
-    return best;
-  }
-
-  best.rice_parameter =
-      EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
-  int64_t q = 0;
-  double target_log = 0;
-  double recovered_log = 0;
-  if (!QuantizeLog(magnitude, previous_log_, log_max_diff_, inverse_log_step_,
-                   lower_log_error_bound_, upper_log_error_bound_, &q, &target_log,
-                   &recovered_log)) {
-    return best;
-  }
-  best.original_log = target_log;
-  best.has_original_log = true;
-  if (q == 0) return best;
-
-  const bool changed_sign = best.sign != previous_sign_;
-  best.mapped = AdaptiveQtCodec::ZigZagEncode(q);
-  best.recovered_log = recovered_log;
-  best.rice_bits = AdaptiveQtCodec::CappedRiceLength(
-      best.mapped, best.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap);
-  const uint64_t prefix_bits = changed_sign ? 3 : 2;
-  if (prefix_bits + best.rice_bits < best.bits) {
-    const double recovered_magnitude = std::exp(recovered_log);
-    if (!std::isfinite(recovered_magnitude)) return best;
-    best.mode = changed_sign ? Mode::kChangedSignResidual : Mode::kSameSignResidual;
-    best.recovered_value = best.sign ? -recovered_magnitude : recovered_magnitude;
-    best.bits = prefix_bits + best.rice_bits;
-  }
-  return best;
-}
-
-void EchosRelCompressor::WriteResidual(const Choice &choice) {
-  compressed_size_in_bits_ += AdaptiveQtCodec::EncodeCappedRice(
-      choice.mapped, choice.rice_parameter, AdaptiveQtCodec::kBoundedRiceQuotientCap,
-      output_.get());
-}
-
-void EchosRelCompressor::WriteChoice(const Choice &choice, double original) {
-  switch (choice.mode) {
-    case Mode::kRepeat:
-      compressed_size_in_bits_ += output_->WriteBit(false);
-      return;
-    case Mode::kSameSignResidual:
-      compressed_size_in_bits_ += output_->WriteInt(2, 2);
-      WriteResidual(choice);
-      return;
-    case Mode::kChangedSignResidual:
-      compressed_size_in_bits_ += output_->WriteInt(6, 3);
-      WriteResidual(choice);
-      return;
-    case Mode::kChangedSignZeroResidual:
-      compressed_size_in_bits_ += output_->WriteInt(14, 4);
-      return;
-    case Mode::kZero:
-      compressed_size_in_bits_ += output_->WriteInt(30, 5);
-      return;
-    case Mode::kRaw:
-      compressed_size_in_bits_ += output_->WriteInt(31, 5);
-      compressed_size_in_bits_ += output_->WriteLong(Double::DoubleToLongBits(original), 64);
-      return;
-  }
-}
-
-void EchosRelCompressor::UpdateState(const Choice &choice, double original) {
-  if (choice.mode == Mode::kRaw) {
-    if (std::isfinite(original) && original != 0) {
-      previous_log_ = choice.has_original_log ? choice.original_log : std::log(std::abs(original));
-      previous_value_ = original;
-      previous_sign_ = std::signbit(original);
-    }
-    return;
-  }
-  if (choice.mode == Mode::kZero || choice.mode == Mode::kRepeat) return;
-  previous_log_ = choice.recovered_log;
-  previous_value_ = choice.recovered_value;
-  previous_sign_ = choice.sign;
-  if (choice.mode != Mode::kChangedSignZeroResidual) {
-    UpdateRiceParameterState(choice.mapped, &adaptive_magnitude_sum_, &adaptive_sample_count_);
-  }
-}
-
 void EchosRelCompressor::AddValue(double value) {
   if (value_count_ >= block_size_) {
     throw std::runtime_error("ECHOS relative block is full");
   }
   if (value_count_ == 0) WriteMetadata();
-  const Choice choice = Choose(value);
-  WriteChoice(choice, value);
-  UpdateState(choice, value);
+
+  const bool sign = std::signbit(value);
+  if (value == 0) {
+    compressed_size_in_bits_ += output_->WriteInt(30, 5);
+    ++value_count_;
+    return;
+  }
+
+  const bool finite = std::isfinite(value);
+  const double magnitude = std::abs(value);
+  if (finite && sign == previous_sign_ &&
+      std::abs(previous_value_ - value) <= relative_error_bound_ * magnitude) {
+    compressed_size_in_bits_ += output_->WriteBit(false);
+    ++value_count_;
+    return;
+  }
+  if (finite && sign != previous_sign_ &&
+      std::abs(std::abs(previous_value_) - magnitude) <= relative_error_bound_ * magnitude) {
+    compressed_size_in_bits_ += output_->WriteInt(14, 4);
+    previous_value_ = sign ? -std::abs(previous_value_) : std::abs(previous_value_);
+    previous_sign_ = sign;
+    ++value_count_;
+    return;
+  }
+
+  const uint32_t rice_parameter =
+      EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
+  int64_t q = 0;
+  double target_log = 0;
+  double recovered_log = 0;
+  bool has_target_log = false;
+  if (QuantizeLog(magnitude, previous_log_, log_max_diff_, inverse_log_step_,
+                  lower_log_error_bound_, upper_log_error_bound_, &q, &target_log,
+                  &recovered_log)) {
+    has_target_log = true;
+    if (q != 0) {
+      const bool changed_sign = sign != previous_sign_;
+      const uint64_t mapped = AdaptiveQtCodec::ZigZagEncode(q);
+      const uint64_t prefix_bits = changed_sign ? 3 : 2;
+      if (prefix_bits + CappedRiceLengthFast(mapped, rice_parameter) < 69) {
+        const double recovered_magnitude = std::exp(recovered_log);
+        if (std::isfinite(recovered_magnitude)) {
+          compressed_size_in_bits_ +=
+              changed_sign ? output_->WriteInt(6, 3) : output_->WriteInt(2, 2);
+          compressed_size_in_bits_ +=
+              EncodeCappedRiceFast(mapped, rice_parameter, output_.get());
+          previous_log_ = recovered_log;
+          previous_value_ = sign ? -recovered_magnitude : recovered_magnitude;
+          previous_sign_ = sign;
+          UpdateRiceParameterState(mapped, &adaptive_magnitude_sum_, &adaptive_sample_count_);
+          ++value_count_;
+          return;
+        }
+      }
+    }
+  }
+
+  compressed_size_in_bits_ += output_->WriteInt(31, 5);
+  compressed_size_in_bits_ += output_->WriteLong(Double::DoubleToLongBits(value), 64);
+  if (finite) {
+    previous_log_ = has_target_log ? target_log : std::log(magnitude);
+    previous_value_ = value;
+    previous_sign_ = sign;
+  }
   ++value_count_;
 }
 
@@ -221,7 +241,7 @@ void EchosRelCompressor::Close() {
   }
   output_->Flush();
   compressed_bytes_ =
-      output_->GetBuffer(static_cast<uint32_t>(std::ceil(compressed_size_in_bits_ / 8.0)));
+      output_->GetUsedBuffer(static_cast<uint32_t>((compressed_size_in_bits_ + 7) >> 3));
   output_->Refresh();
   stored_compressed_size_in_bits_ = compressed_size_in_bits_;
   compressed_size_in_bits_ = 0;

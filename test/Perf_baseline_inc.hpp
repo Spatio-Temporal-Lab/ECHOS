@@ -1,27 +1,31 @@
 #ifndef SERF_ALL_TEST_PERF_BASELINE_INC_HPP_
 #define SERF_ALL_TEST_PERF_BASELINE_INC_HPP_
 
-#define SERF_ENABLE_SERF
+#define SERF_ENABLE_ECHOS
+#define SERF_ENABLE_BASELINE_SERF
 
-#ifdef SERF_ENABLE_SERF
-#include "../src/compressor/serf_xor_compressor.h"
-#include "../src/decompressor/serf_xor_decompressor.h"
-#include "../src/compressor/serf_qt_compressor.h"
-#include "../src/decompressor/serf_qt_decompressor.h"
+#ifdef SERF_ENABLE_ECHOS
 #include "../src/compressor/echos_abs_compressor.h"
 #include "../src/decompressor/echos_abs_decompressor.h"
 #include "../src/compressor/echos_rel_compressor.h"
 #include "../src/decompressor/echos_rel_decompressor.h"
+#endif
 
-#include "../src/compressor_32/serf_xor_compressor_32.h"
-#include "../src/decompressor_32/serf_xor_decompressor_32.h"
-#include "../src/compressor_32/serf_qt_compressor_32.h"
-#include "../src/decompressor_32/serf_qt_decompressor_32.h"
+#ifdef SERF_ENABLE_BASELINE_SERF
+#include "baselines/serf/compressor/serf_xor_compressor.h"
+#include "baselines/serf/decompressor/serf_xor_decompressor.h"
+#include "baselines/serf/compressor/serf_qt_compressor.h"
+#include "baselines/serf/decompressor/serf_qt_decompressor.h"
 
-#include "../src/compressor/serf_xor_compressor_no_opt_appr.h"
-#include "../src/compressor/serf_xor_compressor_no_fast_search.h"
+#include "baselines/serf/compressor_32/serf_xor_compressor_32.h"
+#include "baselines/serf/decompressor_32/serf_xor_decompressor_32.h"
+#include "baselines/serf/compressor_32/serf_qt_compressor_32.h"
+#include "baselines/serf/decompressor_32/serf_qt_decompressor_32.h"
 
-#include "../src/compressor/serf_xor_compressor_rel.h"
+#include "baselines/serf/compressor/serf_xor_compressor_no_opt_appr.h"
+#include "baselines/serf/compressor/serf_xor_compressor_no_fast_search.h"
+
+#include "baselines/serf/compressor/serf_xor_compressor_rel.h"
 #endif
 
 // #define SERF_ENABLE_BASELINE_DEFLATE

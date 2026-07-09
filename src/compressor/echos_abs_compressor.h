@@ -27,7 +27,7 @@ class EchosAbsCompressor {
   double max_diff_;
   double quantization_step_;
   double inverse_quantization_step_;
-  std::unique_ptr<OutputBitStream> output_;
+  std::unique_ptr<EchosOutputBitStream> output_;
   Array<uint8_t> compressed_bytes_;
   double previous_ = 2;
   AdaptiveQtCodec::AdaptiveDeltaRiceState adaptive_state_{};
