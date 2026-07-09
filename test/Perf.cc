@@ -1300,6 +1300,47 @@ void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
 
 // Single Precision
 
+#ifdef SERF_ENABLE_ECHOS
+void PerfEchosAbs_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
+                     const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  EchosAbsCompressor32 compressor(block_size, max_diff);
+  EchosAbsDecompressor32 decompressor;
+
+  int block_count = 0;
+  std::vector<float> original_data;
+
+  while ((original_data = ReadBlock32(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    for (float value : original_data) compressor.AddValue(value);
+    compressor.Close();
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    Array<uint8_t> compression_output = compressor.compressed_bytes();
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    std::vector<float> decompressed_data = decompressor.Decompress(compression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(ExprConf("ECHOS", data_set, block_size, max_diff, true), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+#endif
+
 #ifdef SERF_ENABLE_BASELINE_SERF
 void PerfSerfXOR_32(std::ifstream &data_set_input_stream_ref, float max_diff, int block_size,
                     const std::string &data_set, ExprTable &table_to_insert) {
@@ -2340,18 +2381,39 @@ TEST(Perf, SinglePrecision) {
     }
 
     // Lossy
+#ifdef SERF_ENABLE_BASELINE_SERF
     PerfSerfXOR_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
     PerfSerfQt_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_ECHOS
+    PerfEchosAbs_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ2
     PerfSZ2_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
 
     // Lossless
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
     PerfChimp128_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
     PerfDeflate_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF
     PerfElf_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ4
     PerfLZ4_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ77
     PerfLZ77_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_ZSTD
     PerfZstd_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
     PerfSnappy_32(data_set_input_stream, kMaxDiff32, kBlockSize32, data_set, expr_table_32);
+#endif
 
     data_set_input_stream.close();
   }

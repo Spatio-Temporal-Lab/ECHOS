@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 // File config
 const static std::string kExportExprTablePrefix = "test/";
@@ -25,10 +26,55 @@ const static std::string kDataSetList[] = {
     "Wind-Speed.csv"
 };
 // Overall experiment config
-const static std::string kMethodListOverall[] = {
-    // "LZ77", "Zstd", "Snappy", "SZ2", "Machete", "SimPiece", "Sprintz", "Deflate", "LZ4", "FPC", "Gorilla", "Chimp128",
-    // "Elf", 
-    "SerfQt", "ECHOS", "SerfXOR"
+const static std::vector<std::string> kMethodListOverall = {
+#ifdef SERF_ENABLE_BASELINE_LZ77
+    "LZ77",
+#endif
+#ifdef SERF_ENABLE_BASELINE_ZSTD
+    "Zstd",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
+    "Snappy",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ2
+    "SZ2",
+#endif
+#ifdef SERF_ENABLE_BASELINE_MACHETE
+    "Machete",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SIM_PIECE
+    "SimPiece",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SPRINTZ
+    "Sprintz",
+#endif
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
+    "Deflate",
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ4
+    "LZ4",
+#endif
+#ifdef SERF_ENABLE_BASELINE_FPC
+    "FPC",
+#endif
+#ifdef SERF_ENABLE_BASELINE_GORILLA
+    "Gorilla",
+#endif
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
+    "Chimp128",
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF
+    "Elf",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SERF
+    "SerfQt",
+#endif
+#ifdef SERF_ENABLE_ECHOS
+    "ECHOS",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SERF
+    "SerfXOR",
+#endif
 };
 const static double kMaxDiffOverall = 1.0E-3;
 const static int kBlockSizeOverall = 50;
@@ -67,8 +113,40 @@ const static std::string kDataSetList32[] = {
     "Smart-grid.csv",
     "Wind-Speed.csv"
 };
-const static std::string kMethodList32[] = {
-    "LZ77", "Zstd", "Snappy", "SZ2", "Deflate", "LZ4", "Chimp128", "Elf", "SerfQt", "SerfXOR"
+const static std::vector<std::string> kMethodList32 = {
+#ifdef SERF_ENABLE_BASELINE_LZ77
+    "LZ77",
+#endif
+#ifdef SERF_ENABLE_BASELINE_ZSTD
+    "Zstd",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SNAPPY
+    "Snappy",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ2
+    "SZ2",
+#endif
+#ifdef SERF_ENABLE_BASELINE_DEFLATE
+    "Deflate",
+#endif
+#ifdef SERF_ENABLE_BASELINE_LZ4
+    "LZ4",
+#endif
+#ifdef SERF_ENABLE_BASELINE_CHIMP128
+    "Chimp128",
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF
+    "Elf",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SERF
+    "SerfQt",
+#endif
+#ifdef SERF_ENABLE_ECHOS
+    "ECHOS",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SERF
+    "SerfXOR",
+#endif
 };
 const static int kBlockSize32 = kBlockSizeOverall;
 const static float kMaxDiff32 = kMaxDiffOverall;

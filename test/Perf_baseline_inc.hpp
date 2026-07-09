@@ -9,6 +9,10 @@
 #include "../src/decompressor/echos_abs_decompressor.h"
 #include "../src/compressor/echos_rel_compressor.h"
 #include "../src/decompressor/echos_rel_decompressor.h"
+#include "../src/compressor_32/echos_abs_compressor_32.h"
+#include "../src/decompressor_32/echos_abs_decompressor_32.h"
+#include "../src/compressor_32/echos_rel_compressor_32.h"
+#include "../src/decompressor_32/echos_rel_decompressor_32.h"
 #endif
 
 #ifdef SERF_ENABLE_BASELINE_SERF

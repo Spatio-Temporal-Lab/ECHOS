@@ -11,6 +11,10 @@
 #include "decompressor/echos_abs_decompressor.h"
 #include "compressor/echos_rel_compressor.h"
 #include "decompressor/echos_rel_decompressor.h"
+#include "compressor_32/echos_abs_compressor_32.h"
+#include "decompressor_32/echos_abs_decompressor_32.h"
+#include "compressor_32/echos_rel_compressor_32.h"
+#include "decompressor_32/echos_rel_decompressor_32.h"
 #include "baselines/serf/compressor_32/serf_xor_compressor_32.h"
 #include "baselines/serf/decompressor_32/serf_xor_decompressor_32.h"
 #include "baselines/serf/compressor/net_serf_xor_compressor.h"
@@ -298,6 +302,53 @@ TEST(Correctness, EchosAbsRawEscape) {
   EXPECT_TRUE(std::isnan(recovered[3]));
 }
 
+TEST(Correctness, EchosAbs32Streaming) {
+  for (const auto &data_set : kDataSetList32) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    EchosAbsCompressor32 compressor(kBlockSize32, kMaxDiff32);
+    EchosAbsDecompressor32 decompressor;
+    std::vector<float> original_data;
+    size_t block_index = 0;
+
+    while ((original_data = ReadBlock32(data_set_input_stream, kBlockSize32)).size() == kBlockSize32) {
+      for (float value : original_data) compressor.AddValue(value);
+      compressor.Close();
+      const std::vector<float> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+      ASSERT_EQ(original_data.size(), recovered.size()) << data_set;
+      for (int i = 0; i < kBlockSize32; ++i) {
+        ASSERT_LE(std::abs(original_data[i] - recovered[i]), kMaxDiff32)
+            << data_set << " index=" << block_index * kBlockSize32 + i;
+      }
+      ++block_index;
+    }
+    data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, EchosAbs32RawEscape) {
+  EchosAbsCompressor32 compressor(4, 1.0E-3f);
+  EchosAbsDecompressor32 decompressor;
+  const std::vector<float> original = {
+      1.0f,
+      std::numeric_limits<float>::infinity(),
+      -2.5f,
+      std::numeric_limits<float>::quiet_NaN()};
+
+  for (float value : original) compressor.AddValue(value);
+  compressor.Close();
+  const std::vector<float> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+  ASSERT_EQ(original.size(), recovered.size());
+  EXPECT_NEAR(original[0], recovered[0], 1.0E-3f);
+  EXPECT_TRUE(std::isinf(recovered[1]));
+  EXPECT_EQ(std::signbit(original[1]), std::signbit(recovered[1]));
+  EXPECT_NEAR(original[2], recovered[2], 1.0E-3f);
+  EXPECT_TRUE(std::isnan(recovered[3]));
+}
+
 TEST(Correctness, EchosRelStreamingRelativeError) {
   for (const auto &data_set : kDataSetList) {
     std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
@@ -374,4 +425,83 @@ TEST(Correctness, EchosRelMetadataChangesAndZeroMode) {
 
   compressor.SetBlockConfig(3, 1.0E-3);
   verify_block({1.0, -1.0, 1.001}, 1.0E-3);
+}
+
+TEST(Correctness, EchosRel32StreamingRelativeError) {
+  for (const auto &data_set : kDataSetList32) {
+    std::ifstream data_set_input_stream(kDataSetDirPrefix + data_set);
+    ASSERT_TRUE(data_set_input_stream.is_open()) << "Failed to open " << data_set;
+
+    for (const auto &relative_error : kMaxDiffRel) {
+      EchosRelCompressor32 compressor(kBlockSize32, static_cast<float>(relative_error));
+      EchosRelDecompressor32 decompressor;
+      std::vector<float> original_data;
+      size_t block_index = 0;
+
+      while ((original_data = ReadBlock32(data_set_input_stream, kBlockSize32)).size() == kBlockSize32) {
+        for (float value : original_data) compressor.AddValue(value);
+        compressor.Close();
+        const std::vector<float> recovered = decompressor.Decompress(compressor.compressed_bytes());
+
+        ASSERT_EQ(original_data.size(), recovered.size()) << data_set << " relative_error=" << relative_error;
+        for (int i = 0; i < kBlockSize32; ++i) {
+          const float original = original_data[i];
+          const double actual_error =
+              original == 0 ? (recovered[i] == 0 ? 0 : std::numeric_limits<double>::infinity())
+                            : std::abs(static_cast<double>(original) - recovered[i]) / std::abs(original);
+          if (original == 0) {
+            ASSERT_FALSE(std::signbit(recovered[i]))
+                << data_set << " relative_error=" << relative_error
+                << " index=" << block_index * kBlockSize32 + i;
+          } else {
+            ASSERT_EQ(std::signbit(original), std::signbit(recovered[i]))
+                << data_set << " relative_error=" << relative_error
+                << " index=" << block_index * kBlockSize32 + i;
+          }
+          ASSERT_LE(actual_error, relative_error)
+              << data_set << " relative_error=" << relative_error
+              << " index=" << block_index * kBlockSize32 + i;
+        }
+        ++block_index;
+      }
+      ResetFileStream(data_set_input_stream);
+    }
+    data_set_input_stream.close();
+  }
+}
+
+TEST(Correctness, EchosRel32MetadataChangesAndZeroMode) {
+  EchosRelCompressor32 compressor(4, 1.0E-2f);
+  EchosRelDecompressor32 decompressor;
+
+  const auto verify_block = [&](const std::vector<float> &original, float relative_error) {
+    for (float value : original) compressor.AddValue(value);
+    compressor.Close();
+    const std::vector<float> recovered = decompressor.Decompress(compressor.compressed_bytes());
+    EXPECT_EQ(original.size(), recovered.size());
+    for (size_t i = 0; i < original.size(); ++i) {
+      if (original[i] == 0) {
+        EXPECT_EQ(recovered[i], 0.0f);
+        EXPECT_FALSE(std::signbit(recovered[i]));
+      } else {
+        EXPECT_EQ(std::signbit(original[i]), std::signbit(recovered[i]));
+        EXPECT_LE(std::abs(static_cast<double>(original[i]) - recovered[i]) / std::abs(original[i]),
+                  relative_error);
+      }
+    }
+    return compressor.get_compressed_size_in_bits();
+  };
+
+  const long first_bits = verify_block({1.0f, 1.0f, 1.0f, 1.0f}, 1.0E-2f);
+  const long unchanged_bits = verify_block({1.0f, 1.0f, 1.0f, 1.0f}, 1.0E-2f);
+  EXPECT_GE(first_bits - unchanged_bits, 38);
+  EchosRelDecompressor32 fresh_decompressor;
+  EXPECT_THROW(fresh_decompressor.Decompress(compressor.compressed_bytes()), std::runtime_error);
+
+  compressor.SetBlockConfig(3, 1.0E-2f);
+  const long zero_bits = verify_block({0.0f, -0.0f, 0.0f}, 1.0E-2f);
+  EXPECT_LE(zero_bits, 2 + 16 + 3 * 5);
+
+  compressor.SetBlockConfig(3, 1.0E-3f);
+  verify_block({1.0f, -1.0f, 1.001f}, 1.0E-3f);
 }

@@ -13,9 +13,13 @@ set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
 set(ECHOS_SRC
         compressor/echos_abs_compressor.cc
+        compressor_32/echos_abs_compressor_32.cc
         compressor/echos_rel_compressor.cc
+        compressor_32/echos_rel_compressor_32.cc
         decompressor/echos_abs_decompressor.cc
+        decompressor_32/echos_abs_decompressor_32.cc
         decompressor/echos_rel_decompressor.cc
+        decompressor_32/echos_rel_decompressor_32.cc
         utils/output_bit_stream.cc)
 
 add_library(serf SHARED ${ECHOS_SRC})
