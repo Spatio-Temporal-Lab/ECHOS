@@ -3,3 +3,4 @@ build
 build-codex*/
 test/*.csv
 doc/
+tmp/
