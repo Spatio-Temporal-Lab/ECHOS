@@ -7,7 +7,7 @@
 
 // Experiment switches (default: run Overall only)
 #define RUN_OVERALL_EXPERIMENT
-// #define RUN_PARAM_ABS_MAX_DIFF_EXPERIMENT
+#define RUN_PARAM_ABS_MAX_DIFF_EXPERIMENT
 // #define RUN_PARAM_BLOCK_SIZE_EXPERIMENT
 #define RUN_REL_EXPERIMENT
 // #define RUN_SINGLE_PRECISION_EXPERIMENT

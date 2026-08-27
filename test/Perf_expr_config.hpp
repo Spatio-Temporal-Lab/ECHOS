@@ -86,7 +86,13 @@ const static std::string kMethodListRel[] = {
     "SerfXOR_Rel", "ECHOS_Rel"
 };
 const static double kMaxDiffRel[] = {
-    0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5
+    1.0E-4,
+    5.0E-4,
+    1.0E-3,
+    5.0E-3,
+    1.0E-2,
+    5.0E-2,
+    1.0E-1
 };
 const static int kBlockSizeRel = kBlockSizeOverall;
 // Param experiment (abs max_diff) config
@@ -95,7 +101,7 @@ const static std::string kMethodListParamAbsMaxDiff[] = {
 };
 const static int kBlockSizeParamAbsMaxDiff = kBlockSizeOverall;
 const static double kMaxDiffList[] = {
-    // 1.0E-1, 1.0E-2, 
+    1.0E-1, 1.0E-2, 
     1.0E-3, 1.0E-4, 1.0E-5, 1.0E-6};
 // Param experiment (block size) config
 const static std::string kMethodListParamBlockSize[] = {

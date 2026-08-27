@@ -42,9 +42,9 @@ void PerfADT(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
     ASSERT_EQ(decompression_out_size, 8 * block_size);
     auto decompression_end_time = std::chrono::steady_clock::now();
 
-    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         compression_end_time - compression_start_time);
-    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
         decompression_end_time - decompression_start_time);
 
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);

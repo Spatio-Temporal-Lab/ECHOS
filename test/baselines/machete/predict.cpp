@@ -40,7 +40,9 @@ ssize_t lorenzo1_diff(double* input, ssize_t len, int32_t* output, double error,
         LorenzoConfig* config = reinterpret_cast<LorenzoConfig*>(*predictor_out);
         config->error = error;
         config->first = input[0];
-        __builtin_memcpy(config->outiers, &outier[0], outier.size() * sizeof(double));
+        if (!outier.empty()) {
+                __builtin_memcpy(config->outiers, outier.data(), outier.size() * sizeof(double));
+        }
         return len - 1;
 }
 
