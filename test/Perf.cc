@@ -5,11 +5,12 @@
 #include "Perf_file_utils.hpp"
 #include "Perf_expr_data_struct.hpp"
 
-// Experiment switches (default: run Overall only)
+// Experiment switches
 #define RUN_OVERALL_EXPERIMENT
 #define RUN_PARAM_ABS_MAX_DIFF_EXPERIMENT
-// #define RUN_PARAM_BLOCK_SIZE_EXPERIMENT
+#define RUN_PARAM_BLOCK_SIZE_EXPERIMENT
 #define RUN_REL_EXPERIMENT
+#define RUN_REL_OVERALL_EXPERIMENT
 // #define RUN_SINGLE_PRECISION_EXPERIMENT
 // #define RUN_SERF_ABLATION_EXPERIMENT
 // #define RUN_LAMBDA_EXPERIMENT
@@ -142,6 +143,71 @@ void GenOverallMethodAverageTable(ExprTable &expr_table) {
   }
 }
 
+// Auto-Gen for the Overall Relative-Error Experiment
+
+void GenRelOverallTables(ExprTable &expr_table) {
+  std::ofstream cr_output(kExportExprTablePrefix + "overall_rel_cr" + kExportExprTableSuffix);
+  std::ofstream ct_output(kExportExprTablePrefix + "overall_rel_ct" + kExportExprTableSuffix);
+  std::ofstream dt_output(kExportExprTablePrefix + "overall_rel_dt" + kExportExprTableSuffix);
+  if (!cr_output.is_open() || !ct_output.is_open() || !dt_output.is_open()) {
+    std::cerr << "Failed to export relative-error performance data." << std::endl;
+    exit(-1);
+  }
+
+  cr_output << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+  ct_output << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+  dt_output << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+
+  for (const auto &method : kMethodListRel) {
+    cr_output << method << ",";
+    ct_output << method << ",";
+    dt_output << method << ",";
+    for (const auto &data_set : kDataSetList) {
+      ExprConf this_conf =
+          ExprConf(method, data_set, kBlockSizeRelOverall, kMaxDiffRelOverall);
+      const auto result = expr_table.find(this_conf);
+      if (result == expr_table.end()) {
+        std::cerr << "Missing relative-error result for " << method << " on " << data_set
+                  << std::endl;
+        exit(-1);
+      }
+      cr_output << result->second.CalCompressionRatio(this_conf) << ",";
+      ct_output << result->second.AvgCompressionTimePerBlock() << ",";
+      dt_output << result->second.AvgDecompressionTimePerBlock() << ",";
+    }
+    cr_output << std::endl;
+    ct_output << std::endl;
+    dt_output << std::endl;
+  }
+}
+
+void PrintRelOverallMethodAverageTable(ExprTable &expr_table) {
+  std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+  std::cout << "Method,AvgCompressionRatio,AvgCompressionTimePerBlock,"
+               "AvgDecompressionTimePerBlock"
+            << std::endl;
+
+  for (const auto &method : kMethodListRel) {
+    double sum_cr = 0;
+    double sum_ct = 0;
+    double sum_dt = 0;
+    int count = 0;
+    for (const auto &data_set : kDataSetList) {
+      ExprConf this_conf =
+          ExprConf(method, data_set, kBlockSizeRelOverall, kMaxDiffRelOverall);
+      const auto result = expr_table.find(this_conf);
+      if (result == expr_table.end()) continue;
+      sum_cr += result->second.CalCompressionRatio(this_conf);
+      sum_ct += result->second.AvgCompressionTimePerBlock();
+      sum_dt += result->second.AvgDecompressionTimePerBlock();
+      ++count;
+    }
+    if (count > 0) {
+      std::cout << method << "," << sum_cr / count << "," << sum_ct / count << ","
+                << sum_dt / count << std::endl;
+    }
+  }
+}
 // Auto-Gen for the SinglePrecision Experiment
 
 void GenSinglePrecisionTableCR(ExprTable &expr_table) {
@@ -2338,6 +2404,46 @@ TEST(Perf, ParamBlockSize) {
 }
 #endif
 
+#ifdef RUN_REL_OVERALL_EXPERIMENT
+TEST(Perf, RelOverall) {
+  ExprTable expr_table_rel_overall;
+
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream data_input_stream(kDataSetDirPrefix + data_set);
+    if (!data_input_stream.is_open()) {
+      std::cerr << "Failed to open the file [" << data_set << "]" << std::endl;
+      continue;
+    }
+
+#ifdef SERF_ENABLE_BASELINE_SERF
+    PerfSerfXORRel(data_input_stream,
+                   kMaxDiffRelOverall,
+                   kBlockSizeRelOverall,
+                   data_set,
+                   expr_table_rel_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ2
+    PerfSZ2Rel(data_input_stream,
+               kMaxDiffRelOverall,
+               kBlockSizeRelOverall,
+               data_set,
+               expr_table_rel_overall);
+#endif
+#ifdef SERF_ENABLE_ECHOS
+    PerfEchosRel(data_input_stream,
+                 kMaxDiffRelOverall,
+                 kBlockSizeRelOverall,
+                 data_set,
+                 expr_table_rel_overall);
+#endif
+
+    data_input_stream.close();
+  }
+
+  GenRelOverallTables(expr_table_rel_overall);
+  PrintRelOverallMethodAverageTable(expr_table_rel_overall);
+}
+#endif
 #ifdef RUN_REL_EXPERIMENT
 TEST(Perf, Rel) {
   ExprTable expr_table_rel;

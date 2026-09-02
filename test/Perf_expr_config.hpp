@@ -95,6 +95,9 @@ const static double kMaxDiffRel[] = {
     1.0E-1
 };
 const static int kBlockSizeRel = kBlockSizeOverall;
+// Overall experiment under a fixed relative error bound of 1%.
+const static double kMaxDiffRelOverall = 1.0E-2;
+const static int kBlockSizeRelOverall = kBlockSizeOverall;
 // Param experiment (abs max_diff) config
 const static std::string kMethodListParamAbsMaxDiff[] = {
     "SZ2", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "Sprintz"
