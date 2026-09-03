@@ -176,6 +176,18 @@ const static std::string kMethodListAblation[] = {
 };
 const static int kBlockSizeAblation = kBlockSizeOverall;
 const static double kMaxDiffAblation = kMaxDiffOverall;
+
+// ECHOS ablation experiment config
+const static std::vector<std::string> kMethodListEchosAbsAblation = {
+    "ECHOS", "Batch-Oracle", "Pointwise-Oracle+Meta",
+    "Full-History", "Sliding-Window"};
+const static std::vector<std::string> kMethodListEchosRelAblation = {
+    "ECHOS", "Explicit Flags"};
+const static int kBlockSizeEchosAblation = kBlockSizeOverall;
+const static double kAbsMaxDiffEchosAblation = kMaxDiffOverall;
+const static double kRelMaxDiffEchosAblation = kMaxDiffRelOverall;
+const static std::size_t kSlidingWindowEchosAblation = 8;
+
 // Lock-Up Table for SerfXOR
 const static std::unordered_map<std::string, int> kFileNameToAdjustDigit{
     {"Air-pressure.csv", 0},

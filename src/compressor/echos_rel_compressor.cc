@@ -109,6 +109,29 @@ inline uint64_t EncodeCappedRiceFast(uint64_t mapped, uint32_t parameter,
   return AdaptiveQtCodec::kBoundedRiceQuotientCap + EncodeDeltaFast(mapped, output);
 }
 
+inline uint64_t CappedRiceNonnegativeLengthFast(uint64_t value,
+                                                uint32_t rice_parameter) {
+  const uint64_t quotient = value >> rice_parameter;
+  return quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap
+             ? quotient + rice_parameter + 1
+             : AdaptiveQtCodec::kBoundedRiceQuotientCap +
+                   DeltaLengthFast(value + 1);
+}
+
+inline uint64_t EncodeCappedRiceNonnegativeFast(
+    uint64_t value, uint32_t parameter, EchosOutputBitStream *output) {
+  const uint64_t quotient = value >> parameter;
+  if (quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap) {
+    WriteZerosFast(quotient, output);
+    output->WriteBit(true);
+    if (parameter > 0) output->WriteLong(value, parameter);
+    return quotient + 1 + parameter;
+  }
+  WriteZerosFast(AdaptiveQtCodec::kBoundedRiceQuotientCap, output);
+  return AdaptiveQtCodec::kBoundedRiceQuotientCap +
+         EncodeDeltaFast(value + 1, output);
+}
+
 void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t *sample_count) {
   const uint64_t magnitude = mapped - 1;
   *magnitude_sum = DecayAndAddFast(
@@ -121,8 +144,10 @@ void UpdateRiceParameterState(uint64_t mapped, uint64_t *magnitude_sum, uint64_t
 
 }  // namespace
 
-EchosRelCompressor::EchosRelCompressor(int block_size, double relative_error_bound)
-    : block_size_(block_size) {
+EchosRelCompressor::EchosRelCompressor(int block_size,
+                                       double relative_error_bound,
+                                       bool explicit_flags)
+    : block_size_(block_size), explicit_flags_(explicit_flags) {
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   UpdateErrorConfig(relative_error_bound);
   output_ = std::make_unique<EchosOutputBitStream>(static_cast<uint32_t>(16 * block_size + 32));
@@ -163,11 +188,70 @@ void EchosRelCompressor::WriteMetadata() {
   metadata_initialized_ = true;
 }
 
+void EchosRelCompressor::AddValueExplicitFlags(double value) {
+  const bool sign = std::signbit(value);
+  compressed_size_in_bits_ += output_->WriteBit(sign);
+
+  if (value == 0) {
+    compressed_size_in_bits_ += output_->WriteBit(true);
+    compressed_size_in_bits_ += output_->WriteBit(false);
+    ++value_count_;
+    return;
+  }
+
+  const bool finite = std::isfinite(value);
+  const double magnitude = std::abs(value);
+  const uint32_t rice_parameter =
+      EstimateRiceParameter(adaptive_magnitude_sum_, adaptive_sample_count_);
+  int64_t q = 0;
+  double target_log = 0;
+  double recovered_log = 0;
+  bool has_target_log = false;
+  bool use_residual = false;
+  uint64_t residual = 0;
+  double recovered_magnitude = 0;
+  if (QuantizeLog(magnitude, previous_log_, log_max_diff_, inverse_log_step_,
+                  lower_log_error_bound_, upper_log_error_bound_, &q, &target_log,
+                  &recovered_log)) {
+    has_target_log = true;
+    residual = AdaptiveQtCodec::ZigZagEncode(q);
+    if (CappedRiceNonnegativeLengthFast(residual, rice_parameter) < 63) {
+      recovered_magnitude = std::exp(recovered_log);
+      use_residual = std::isfinite(recovered_magnitude);
+    }
+  }
+
+  compressed_size_in_bits_ += output_->WriteBit(false);
+  compressed_size_in_bits_ += output_->WriteBit(!use_residual);
+  if (use_residual) {
+    compressed_size_in_bits_ +=
+        EncodeCappedRiceNonnegativeFast(residual, rice_parameter, output_.get());
+    previous_log_ = recovered_log;
+    previous_value_ = sign ? -recovered_magnitude : recovered_magnitude;
+    previous_sign_ = sign;
+    UpdateRiceParameterState(residual + 1, &adaptive_magnitude_sum_,
+                             &adaptive_sample_count_);
+  } else {
+    compressed_size_in_bits_ +=
+        output_->WriteLong(Double::DoubleToLongBits(value), 63);
+    if (finite) {
+      previous_log_ = has_target_log ? target_log : std::log(magnitude);
+      previous_value_ = value;
+      previous_sign_ = sign;
+    }
+  }
+  ++value_count_;
+}
+
 void EchosRelCompressor::AddValue(double value) {
   if (value_count_ >= block_size_) {
     throw std::runtime_error("ECHOS relative block is full");
   }
   if (value_count_ == 0) WriteMetadata();
+  if (explicit_flags_) {
+    AddValueExplicitFlags(value);
+    return;
+  }
 
   const bool sign = std::signbit(value);
   if (value == 0) {
@@ -210,8 +294,9 @@ void EchosRelCompressor::AddValue(double value) {
       if (prefix_bits + CappedRiceLengthFast(mapped, rice_parameter) < 69) {
         const double recovered_magnitude = std::exp(recovered_log);
         if (std::isfinite(recovered_magnitude)) {
-          compressed_size_in_bits_ +=
-              changed_sign ? output_->WriteInt(6, 3) : output_->WriteInt(2, 2);
+          compressed_size_in_bits_ += changed_sign
+                                          ? output_->WriteInt(6, 3)
+                                          : output_->WriteInt(2, 2);
           compressed_size_in_bits_ +=
               EncodeCappedRiceFast(mapped, rice_parameter, output_.get());
           previous_log_ = recovered_log;

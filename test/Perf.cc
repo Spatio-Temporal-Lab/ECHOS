@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <stdexcept>
+
 #include "Perf_baseline_inc.hpp"
 #include "Perf_expr_config.hpp"
 #include "Perf_file_utils.hpp"
@@ -11,6 +14,7 @@
 #define RUN_PARAM_BLOCK_SIZE_EXPERIMENT
 #define RUN_REL_EXPERIMENT
 #define RUN_REL_OVERALL_EXPERIMENT
+#define RUN_ECHOS_ABLATION_EXPERIMENT
 // #define RUN_SINGLE_PRECISION_EXPERIMENT
 // #define RUN_SERF_ABLATION_EXPERIMENT
 // #define RUN_LAMBDA_EXPERIMENT
@@ -208,6 +212,41 @@ void PrintRelOverallMethodAverageTable(ExprTable &expr_table) {
     }
   }
 }
+
+void ExportEchosAblationResults(
+    ExprTable &expr_table, const std::vector<std::string> &methods,
+    int block_size, double error_bound, const std::string &file_name) {
+  std::ofstream output(kExportExprTablePrefix + file_name +
+                       kExportExprTableSuffix);
+  if (!output.is_open()) {
+    throw std::runtime_error("Failed to export ECHOS ablation data");
+  }
+  output << "Method,DataSet,CompressionRatio,CompressionTime(us/block),"
+            "DecompressionTime(us/block),DecisionMetadataRatio,"
+            "DecisionMetadataBitsPerValue"
+         << std::endl;
+  output << std::setiosflags(std::ios::fixed) << std::setprecision(8);
+  for (const auto &method : methods) {
+    for (const auto &data_set : kDataSetList) {
+      ExprConf conf(method, data_set, block_size, error_bound);
+      const auto result = expr_table.find(conf);
+      if (result == expr_table.end()) {
+        throw std::runtime_error("Missing ECHOS ablation result");
+      }
+      auto &record = result->second;
+      const double metadata_bits_per_value =
+          static_cast<double>(record.decision_metadata_size_in_bits()) /
+          static_cast<double>(record.block_count() * block_size);
+      output << method << "," << data_set << ","
+             << record.CalCompressionRatio(conf) << ","
+             << record.AvgCompressionTimePerBlock() << ","
+             << record.AvgDecompressionTimePerBlock() << ","
+             << record.DecisionMetadataRatio() << ","
+             << metadata_bits_per_value << std::endl;
+    }
+  }
+}
+
 // Auto-Gen for the SinglePrecision Experiment
 
 void GenSinglePrecisionTableCR(ExprTable &expr_table) {
@@ -780,6 +819,121 @@ void PerfEchosRel(std::ifstream &data_set_input_stream_ref, double rel_diff, int
   perf_record.set_block_count(block_count);
   table_to_insert.insert(std::make_pair(ExprConf("ECHOS_Rel", data_set, block_size, rel_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
+}
+
+void VerifyAbsoluteBlock(const std::vector<double> &original,
+                         const std::vector<double> &reconstructed,
+                         double max_diff) {
+  if (original.size() != reconstructed.size()) {
+    throw std::runtime_error("Invalid ECHOS absolute output length");
+  }
+  for (std::size_t index = 0; index < original.size(); ++index) {
+    if (std::isfinite(original[index])) {
+      if (!std::isfinite(reconstructed[index]) ||
+          std::abs(original[index] - reconstructed[index]) > max_diff) {
+        throw std::runtime_error("ECHOS absolute error bound violated");
+      }
+    }
+  }
+}
+
+void VerifyRelativeBlock(const std::vector<double> &original,
+                         const std::vector<double> &reconstructed,
+                         double relative_error_bound) {
+  if (original.size() != reconstructed.size()) {
+    throw std::runtime_error("Invalid ECHOS relative output length");
+  }
+  for (std::size_t index = 0; index < original.size(); ++index) {
+    if (!std::isfinite(original[index])) continue;
+    if (original[index] == 0) {
+      if (reconstructed[index] != 0) {
+        throw std::runtime_error("ECHOS relative zero reconstruction failed");
+      }
+      continue;
+    }
+    const double error = std::abs(original[index] - reconstructed[index]);
+    const double bound = relative_error_bound * std::abs(original[index]);
+    if (!std::isfinite(reconstructed[index]) ||
+        error > bound + 1e-12 * std::abs(original[index])) {
+      throw std::runtime_error("ECHOS relative error bound violated");
+    }
+  }
+}
+
+void PerfEchosAbsAblation(std::ifstream &input, double max_diff,
+                          int block_size, const std::string &data_set,
+                          const std::string &method, EchosAbsMode mode,
+                          ExprTable &table) {
+  PerfRecord record;
+  EchosAbsCompressor compressor(block_size, max_diff, mode,
+                                kSlidingWindowEchosAblation);
+  EchosAbsDecompressor decompressor(mode, kSlidingWindowEchosAblation);
+  int block_count = 0;
+  std::vector<double> original;
+  while ((original = ReadBlock(input, block_size)).size() == block_size) {
+    ++block_count;
+    const auto compression_start = std::chrono::steady_clock::now();
+    for (double value : original) compressor.AddValue(value);
+    compressor.Close();
+    const auto compression_end = std::chrono::steady_clock::now();
+    record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    record.AddDecisionMetadataSize(
+        compressor.get_decision_metadata_size_in_bits());
+    const Array<uint8_t> compressed = compressor.compressed_bytes();
+    const auto decompression_start = std::chrono::steady_clock::now();
+    const std::vector<double> reconstructed =
+        decompressor.Decompress(compressed);
+    const auto decompression_end = std::chrono::steady_clock::now();
+    auto compression_time = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        compression_end - compression_start);
+    auto decompression_time =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            decompression_end - decompression_start);
+    record.IncreaseCompressionTime(compression_time);
+    record.IncreaseDecompressionTime(decompression_time);
+    VerifyAbsoluteBlock(original, reconstructed, max_diff);
+  }
+  record.set_block_count(block_count);
+  table.insert(std::make_pair(
+      ExprConf(method, data_set, block_size, max_diff), record));
+  ResetFileStream(input);
+}
+
+void PerfEchosRelAblation(std::ifstream &input, double relative_error_bound,
+                          int block_size, const std::string &data_set,
+                          const std::string &method, bool explicit_flags,
+                          ExprTable &table) {
+  PerfRecord record;
+  EchosRelCompressor compressor(block_size, relative_error_bound,
+                                explicit_flags);
+  EchosRelDecompressor decompressor(explicit_flags);
+  int block_count = 0;
+  std::vector<double> original;
+  while ((original = ReadBlock(input, block_size)).size() == block_size) {
+    ++block_count;
+    const auto compression_start = std::chrono::steady_clock::now();
+    for (double value : original) compressor.AddValue(value);
+    compressor.Close();
+    const auto compression_end = std::chrono::steady_clock::now();
+    record.AddCompressedSize(compressor.get_compressed_size_in_bits());
+    const Array<uint8_t> compressed = compressor.compressed_bytes();
+    const auto decompression_start = std::chrono::steady_clock::now();
+    const std::vector<double> reconstructed =
+        decompressor.Decompress(compressed);
+    const auto decompression_end = std::chrono::steady_clock::now();
+    auto compression_time = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        compression_end - compression_start);
+    auto decompression_time =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            decompression_end - decompression_start);
+    record.IncreaseCompressionTime(compression_time);
+    record.IncreaseDecompressionTime(decompression_time);
+    VerifyRelativeBlock(original, reconstructed, relative_error_bound);
+  }
+  record.set_block_count(block_count);
+  table.insert(std::make_pair(
+      ExprConf(method, data_set, block_size, relative_error_bound), record));
+  ResetFileStream(input);
 }
 #endif
 
@@ -2473,6 +2627,47 @@ TEST(Perf, Rel) {
   GenParamRelDiffTableCT(expr_table_rel);
   GenParamRelDiffTableDT(expr_table_rel);
   PrintParamRelDiffSummary(expr_table_rel);
+}
+#endif
+
+#ifdef RUN_ECHOS_ABLATION_EXPERIMENT
+TEST(Perf, EchosAblation) {
+  ExprTable abs_results;
+  ExprTable rel_results;
+  for (const auto &data_set : kDataSetList) {
+    std::ifstream input(kDataSetDirPrefix + data_set);
+    if (!input.is_open()) {
+      throw std::runtime_error("Failed to open " + data_set);
+    }
+    PerfEchosAbsAblation(
+        input, kAbsMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "ECHOS", EchosAbsMode::kAdaptive, abs_results);
+    PerfEchosAbsAblation(
+        input, kAbsMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "Batch-Oracle", EchosAbsMode::kBatchOracle, abs_results);
+    PerfEchosAbsAblation(
+        input, kAbsMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "Pointwise-Oracle+Meta", EchosAbsMode::kPointwiseOracle, abs_results);
+    PerfEchosAbsAblation(
+        input, kAbsMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "Full-History", EchosAbsMode::kFullHistory, abs_results);
+    PerfEchosAbsAblation(
+        input, kAbsMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "Sliding-Window", EchosAbsMode::kSlidingWindow, abs_results);
+
+    PerfEchosRelAblation(
+        input, kRelMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "ECHOS", false, rel_results);
+    PerfEchosRelAblation(
+        input, kRelMaxDiffEchosAblation, kBlockSizeEchosAblation, data_set,
+        "Explicit Flags", true, rel_results);
+  }
+  ExportEchosAblationResults(
+      abs_results, kMethodListEchosAbsAblation, kBlockSizeEchosAblation,
+      kAbsMaxDiffEchosAblation, "echos_ablation_abs");
+  ExportEchosAblationResults(
+      rel_results, kMethodListEchosRelAblation, kBlockSizeEchosAblation,
+      kRelMaxDiffEchosAblation, "echos_ablation_rel");
 }
 #endif
 

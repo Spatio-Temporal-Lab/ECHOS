@@ -8,9 +8,13 @@
 
 class EchosRelDecompressor {
  public:
+  explicit EchosRelDecompressor(bool explicit_flags = false)
+      : explicit_flags_(explicit_flags) {}
+
   std::vector<double> Decompress(const Array<uint8_t> &bytes);
 
  private:
+  bool explicit_flags_;
   double previous_log_ = 0;
   double previous_value_ = 1;
   bool previous_sign_ = false;

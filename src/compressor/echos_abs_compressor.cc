@@ -1,6 +1,7 @@
 #include "compressor/echos_abs_compressor.h"
 
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <stdexcept>
 
@@ -38,6 +39,17 @@ inline uint32_t EstimateRiceParameterFast(
   const uint32_t magnitude_log = FloorLog2NonZero(state.magnitude_sum);
   const uint32_t sample_log = FloorLog2NonZero(state.sample_count);
   return magnitude_log > sample_log ? magnitude_log - sample_log : 0;
+}
+
+inline uint32_t RiceParameterFromMean(long double magnitude_sum,
+                                      std::size_t sample_count) {
+  if (sample_count == 0) return 0;
+  const long double mean =
+      magnitude_sum / static_cast<long double>(sample_count);
+  if (mean < 1) return 0;
+  int exponent = 0;
+  std::frexp(mean, &exponent);
+  return exponent > 64 ? 63 : static_cast<uint32_t>(exponent - 1);
 }
 
 inline uint64_t DeltaLengthFast(uint64_t mapped) {
@@ -80,23 +92,59 @@ inline uint64_t WriteCappedRiceRawFast(EchosOutputBitStream *output) {
   return AdaptiveQtCodec::kBoundedRiceQuotientCap + 1;
 }
 
-inline void UpdateAbsStateFast(uint64_t mapped, uint32_t rice_parameter,
-                               AdaptiveQtCodec::AdaptiveDeltaRiceState *state) {
-  const uint64_t delta_length = DeltaLengthFast(mapped);
+inline uint64_t CappedRiceLengthFast(uint64_t mapped, uint32_t rice_parameter) {
   const uint64_t quotient = (mapped - 1) >> rice_parameter;
-  const uint64_t rice_direct_length = quotient + rice_parameter + 1;
-  const uint64_t rice_length =
-      quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap
-          ? rice_direct_length
-          : AdaptiveQtCodec::kBoundedRiceQuotientCap + 1 + delta_length;
+  return quotient < AdaptiveQtCodec::kBoundedRiceQuotientCap
+             ? quotient + rice_parameter + 1
+             : AdaptiveQtCodec::kBoundedRiceQuotientCap + 1 + DeltaLengthFast(mapped);
+}
+
+inline std::array<uint64_t, 3> MakeAbsObservation(uint64_t mapped,
+                                                  uint32_t rice_parameter) {
+  const uint64_t delta_length = DeltaLengthFast(mapped);
+  const uint64_t rice_length = CappedRiceLengthFast(mapped, rice_parameter);
+  const uint64_t magnitude = mapped - 1;
+  return {delta_length, rice_length,
+          magnitude < AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap
+              ? magnitude
+              : AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap};
+}
+
+inline void UpdateAbsState(uint64_t mapped, uint32_t rice_parameter,
+                           EchosAbsMode mode, std::size_t window_size,
+                           std::deque<std::array<uint64_t, 3>> *window,
+                           AdaptiveQtCodec::AdaptiveDeltaRiceState *state) {
+  const auto observation = MakeAbsObservation(mapped, rice_parameter);
+  const uint64_t delta_length = observation[0];
+  const uint64_t rice_length = observation[1];
+  const uint64_t magnitude = observation[2];
+  if (mode == EchosAbsMode::kFullHistory) {
+    state->delta_cost += delta_length;
+    state->rice_cost += rice_length;
+    state->magnitude_sum += magnitude;
+    ++state->sample_count;
+    return;
+  }
+  if (mode == EchosAbsMode::kSlidingWindow) {
+    state->delta_cost += delta_length;
+    state->rice_cost += rice_length;
+    state->magnitude_sum += magnitude;
+    ++state->sample_count;
+    window->push_back(observation);
+    if (window->size() > window_size) {
+      const auto oldest = window->front();
+      window->pop_front();
+      state->delta_cost -= oldest[0];
+      state->rice_cost -= oldest[1];
+      state->magnitude_sum -= oldest[2];
+      --state->sample_count;
+    }
+    return;
+  }
+  if (mode != EchosAbsMode::kAdaptive) return;
   state->delta_cost = DecayAndAddFast(state->delta_cost, delta_length);
   state->rice_cost = DecayAndAddFast(state->rice_cost, rice_length);
-  const uint64_t magnitude = mapped - 1;
-  state->magnitude_sum = DecayAndAddFast(
-      state->magnitude_sum,
-      magnitude < AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap
-          ? magnitude
-          : AdaptiveQtCodec::kAdaptiveRiceMagnitudeCap);
+  state->magnitude_sum = DecayAndAddFast(state->magnitude_sum, magnitude);
   state->sample_count = DecayAndAddFast(state->sample_count, 1);
 }
 
@@ -133,15 +181,30 @@ bool Quantize(double value, double prediction, double max_diff, double quantizat
   return std::isfinite(*recovered) && std::abs(value - *recovered) <= max_diff;
 }
 
+struct QuantizedAbsValue {
+  bool raw;
+  uint64_t mapped;
+  double reconstructed;
+  double original;
+};
+
 }  // namespace
 
-EchosAbsCompressor::EchosAbsCompressor(int block_size, double max_diff)
+EchosAbsCompressor::EchosAbsCompressor(int block_size, double max_diff,
+                                       EchosAbsMode mode,
+                                       std::size_t sliding_window)
     : block_size_(block_size),
       max_diff_(max_diff * 0.999),
       quantization_step_(2 * max_diff_),
-      inverse_quantization_step_(1.0 / quantization_step_) {
+      inverse_quantization_step_(1.0 / quantization_step_),
+      mode_(mode),
+      sliding_window_(sliding_window) {
   if (block_size <= 0 || block_size > 65535) throw std::invalid_argument("Invalid block size");
   if (!std::isfinite(max_diff) || max_diff <= 0) throw std::invalid_argument("Invalid error bound");
+  if (mode_ == EchosAbsMode::kSlidingWindow && sliding_window_ == 0) {
+    throw std::invalid_argument("Sliding window must be nonzero");
+  }
+  if (mode_ == EchosAbsMode::kBatchOracle) pending_values_.reserve(block_size_);
   output_ = std::make_unique<EchosOutputBitStream>(static_cast<uint32_t>(24 * block_size + 32));
 }
 
@@ -173,27 +236,115 @@ void EchosAbsCompressor::UpdatePrediction(double recovered) {
   previous_ = std::isfinite(recovered) ? recovered : 2;
 }
 
+void EchosAbsCompressor::EncodeBatchOracle() {
+  std::vector<QuantizedAbsValue> values;
+  values.reserve(pending_values_.size());
+  double prediction = previous_;
+  uint64_t delta_total = 0;
+  long double magnitude_sum = 0;
+  std::size_t sample_count = 0;
+  for (double value : pending_values_) {
+    uint64_t mapped = 1;
+    double reconstructed = 0;
+    const bool quantized =
+        Quantize(value, prediction, max_diff_, quantization_step_,
+                 inverse_quantization_step_, &mapped, &reconstructed);
+    values.push_back({!quantized, mapped, reconstructed, value});
+    if (quantized) {
+      delta_total += DeltaLengthFast(mapped);
+      magnitude_sum += static_cast<long double>(mapped - 1);
+      ++sample_count;
+      prediction = reconstructed;
+    } else {
+      delta_total += DeltaLengthFast(kEscape) + 64;
+      prediction = std::isfinite(value) ? value : 2;
+    }
+  }
+
+  const uint32_t batch_parameter =
+      RiceParameterFromMean(magnitude_sum, sample_count);
+  uint64_t batch_rice_total = 0;
+  for (const auto &item : values) {
+    batch_rice_total +=
+        item.raw
+            ? AdaptiveQtCodec::kBoundedRiceQuotientCap + 1 + 64
+            : CappedRiceLengthFast(item.mapped, batch_parameter);
+  }
+  const bool use_rice = batch_rice_total < delta_total;
+  compressed_size_in_bits_ += output_->WriteBit(use_rice);
+  ++decision_metadata_size_in_bits_;
+  if (use_rice) {
+    compressed_size_in_bits_ += output_->WriteInt(batch_parameter, 6);
+    decision_metadata_size_in_bits_ += 6;
+  }
+
+  for (const auto &item : values) {
+    if (item.raw) {
+      compressed_size_in_bits_ += use_rice
+                                      ? WriteCappedRiceRawFast(output_.get())
+                                      : EncodeDeltaFast(kEscape, output_.get());
+      compressed_size_in_bits_ +=
+          output_->WriteLong(Double::DoubleToLongBits(item.original), 64);
+      UpdatePrediction(item.original);
+    } else {
+      compressed_size_in_bits_ +=
+          use_rice
+              ? EncodeCappedRiceWithRawFast(item.mapped, batch_parameter, output_.get())
+              : EncodeDeltaFast(item.mapped, output_.get());
+      UpdatePrediction(item.reconstructed);
+    }
+  }
+  pending_values_.clear();
+}
+
 void EchosAbsCompressor::AddValue(double value) {
   if (value_count_ >= block_size_) {
     throw std::runtime_error("ECHOS absolute block is full");
   }
   if (value_count_ == 0) WriteMetadata();
+  if (mode_ == EchosAbsMode::kBatchOracle) {
+    pending_values_.push_back(value);
+    ++value_count_;
+    return;
+  }
 
-  const bool use_rice = adaptive_state_.rice_cost < adaptive_state_.delta_cost;
-  const uint32_t rice_parameter = EstimateRiceParameterFast(adaptive_state_);
+  bool use_rice = adaptive_state_.rice_cost < adaptive_state_.delta_cost;
+  uint32_t rice_parameter = EstimateRiceParameterFast(adaptive_state_);
   uint64_t mapped = 1;
   double recovered = 0;
   if (Quantize(value, previous_, max_diff_, quantization_step_, inverse_quantization_step_,
                &mapped, &recovered)) {
+    if (mode_ == EchosAbsMode::kPointwiseOracle) {
+      const uint64_t magnitude = mapped - 1;
+      rice_parameter =
+          magnitude == 0 ? 0 : FloorLog2NonZero(magnitude);
+      const uint64_t delta_length = DeltaLengthFast(mapped);
+      use_rice =
+          CappedRiceLengthFast(mapped, rice_parameter) < delta_length;
+      compressed_size_in_bits_ += output_->WriteBit(use_rice);
+      ++decision_metadata_size_in_bits_;
+      if (use_rice) {
+        compressed_size_in_bits_ += output_->WriteInt(rice_parameter, 6);
+        decision_metadata_size_in_bits_ += 6;
+      }
+    }
     if (use_rice) {
       compressed_size_in_bits_ +=
           EncodeCappedRiceWithRawFast(mapped, rice_parameter, output_.get());
     } else {
       compressed_size_in_bits_ += EncodeDeltaFast(mapped, output_.get());
     }
-    UpdateAbsStateFast(mapped, rice_parameter, &adaptive_state_);
+    UpdateAbsState(mapped, rice_parameter, mode_, sliding_window_,
+                   &context_window_, &adaptive_state_);
     UpdatePrediction(recovered);
   } else {
+    if (mode_ == EchosAbsMode::kPointwiseOracle) {
+      use_rice = true;
+      rice_parameter = 0;
+      compressed_size_in_bits_ += output_->WriteBit(true);
+      compressed_size_in_bits_ += output_->WriteInt(rice_parameter, 6);
+      decision_metadata_size_in_bits_ += 7;
+    }
     if (use_rice) {
       compressed_size_in_bits_ += WriteCappedRiceRawFast(output_.get());
     } else {
@@ -209,6 +360,7 @@ void EchosAbsCompressor::Close() {
   if (value_count_ != block_size_) {
     throw std::runtime_error("ECHOS absolute block is incomplete");
   }
+  if (mode_ == EchosAbsMode::kBatchOracle) EncodeBatchOracle();
   output_->Flush();
   compressed_bytes_ =
       output_->GetUsedBuffer(static_cast<uint32_t>((compressed_size_in_bits_ + 7) >> 3));
@@ -216,6 +368,8 @@ void EchosAbsCompressor::Close() {
   stored_compressed_size_in_bits_ = compressed_size_in_bits_;
   compressed_size_in_bits_ = 0;
   value_count_ = 0;
+  stored_decision_metadata_size_in_bits_ = decision_metadata_size_in_bits_;
+  decision_metadata_size_in_bits_ = 0;
 }
 
 Array<uint8_t> EchosAbsCompressor::compressed_bytes() const {
@@ -224,4 +378,8 @@ Array<uint8_t> EchosAbsCompressor::compressed_bytes() const {
 
 long EchosAbsCompressor::get_compressed_size_in_bits() const {
   return stored_compressed_size_in_bits_;
+}
+
+long EchosAbsCompressor::get_decision_metadata_size_in_bits() const {
+  return stored_decision_metadata_size_in_bits_;
 }

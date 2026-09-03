@@ -10,7 +10,8 @@
 
 class EchosRelCompressor {
  public:
-  EchosRelCompressor(int block_size, double relative_error_bound);
+  EchosRelCompressor(int block_size, double relative_error_bound,
+                     bool explicit_flags = false);
 
   void SetBlockConfig(int block_size, double relative_error_bound);
   void AddValue(double value);
@@ -22,6 +23,7 @@ class EchosRelCompressor {
  private:
   void UpdateErrorConfig(double relative_error_bound);
   void WriteMetadata();
+  void AddValueExplicitFlags(double value);
 
   int block_size_;
   double relative_error_bound_;
@@ -42,6 +44,7 @@ class EchosRelCompressor {
   int value_count_ = 0;
   long compressed_size_in_bits_ = 0;
   long stored_compressed_size_in_bits_ = 0;
+  bool explicit_flags_;
 };
 
 #endif  // ECHOS_REL_COMPRESSOR_H_

@@ -96,6 +96,21 @@ class PerfRecord {
     compressed_size_in_bits_ += size;
   }
 
+  void AddDecisionMetadataSize(long size) {
+    decision_metadata_size_in_bits_ += size;
+  }
+
+  long decision_metadata_size_in_bits() const {
+    return decision_metadata_size_in_bits_;
+  }
+
+  double DecisionMetadataRatio() const {
+    return compressed_size_in_bits_ == 0
+               ? 0.0
+               : static_cast<double>(decision_metadata_size_in_bits_) /
+                     static_cast<double>(compressed_size_in_bits_);
+  }
+
   void set_block_count(int blockCount_) {
     block_count_ = blockCount_;
   }
@@ -113,6 +128,7 @@ class PerfRecord {
   std::chrono::nanoseconds compression_time_ = std::chrono::nanoseconds::zero();
   std::chrono::nanoseconds decompression_time_ = std::chrono::nanoseconds::zero();
   long compressed_size_in_bits_ = 0;
+  long decision_metadata_size_in_bits_ = 0;
   int block_count_ = 0;
 };
 

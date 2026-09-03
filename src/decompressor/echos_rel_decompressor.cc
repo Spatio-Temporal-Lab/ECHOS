@@ -183,6 +183,17 @@ inline uint64_t DecodeCappedRiceFast(uint32_t parameter, RelBitReader *input) {
   return ((quotient << parameter) | remainder) + 1;
 }
 
+inline uint64_t DecodeCappedRiceNonnegativeFast(uint32_t parameter,
+                                                RelBitReader *input) {
+  const uint64_t quotient =
+      input->ReadUnaryZerosOrCap(AdaptiveQtCodec::kBoundedRiceQuotientCap);
+  if (quotient == AdaptiveQtCodec::kBoundedRiceQuotientCap) {
+    return DecodeDeltaFast(input) - 1;
+  }
+  const uint64_t remainder = parameter == 0 ? 0 : input->ReadLong(parameter);
+  return (quotient << parameter) | remainder;
+}
+
 }  // namespace
 
 std::vector<double> EchosRelDecompressor::Decompress(const Array<uint8_t> &bytes) {
@@ -208,6 +219,45 @@ std::vector<double> EchosRelDecompressor::Decompress(const Array<uint8_t> &bytes
   uint64_t sample_count = adaptive_sample_count_;
   const double log_step = 2 * log_max_diff_;
   for (int index = 0; index < block_size_; ++index) {
+    if (explicit_flags_) {
+      const bool sign = input.ReadBit();
+      const bool zero = input.ReadBit();
+      const bool raw = input.ReadBit();
+      if (zero) {
+        if (raw) throw std::runtime_error("Invalid explicit ECHOS flags");
+        result[index] = Double::LongBitsToDouble(
+            static_cast<uint64_t>(sign) << 63);
+        continue;
+      }
+      if (raw) {
+        const uint64_t bits =
+            (static_cast<uint64_t>(sign) << 63) | input.ReadLong(63);
+        const double value = Double::LongBitsToDouble(bits);
+        result[index] = value;
+        if (std::isfinite(value)) {
+          previous_log = std::log(std::abs(value));
+          previous_value = value;
+          previous_sign = sign;
+        }
+        continue;
+      }
+
+      const uint32_t rice_parameter =
+          EstimateRiceParameter(magnitude_sum, sample_count);
+      const uint64_t residual =
+          DecodeCappedRiceNonnegativeFast(rice_parameter, &input);
+      if (residual == std::numeric_limits<uint64_t>::max()) {
+        throw std::runtime_error("Invalid explicit ECHOS residual");
+      }
+      const int64_t q = AdaptiveQtCodec::ZigZagDecode(residual);
+      previous_log += log_step * static_cast<double>(q);
+      const double magnitude = std::exp(previous_log);
+      previous_sign = sign;
+      previous_value = sign ? -magnitude : magnitude;
+      result[index] = previous_value;
+      UpdateRiceParameterState(residual + 1, &magnitude_sum, &sample_count);
+      continue;
+    }
     const Mode mode = ReadMode(&input);
     if (mode == Mode::kRaw) {
       const double value = Double::LongBitsToDouble(input.ReadLong(64));
