@@ -46,6 +46,7 @@
 #define SERF_ENABLE_BASELINE_SIM_PIECE
 #define SERF_ENABLE_BASELINE_SZ2
 #define SERF_ENABLE_BASELINE_SPRINTZ
+#define SERF_ENABLE_BASELINE_BUFF_RUST
 #define SERF_ENABLE_BASELINE_ALP
 
 #ifdef SERF_ENABLE_BASELINE_DEFLATE
@@ -110,6 +111,10 @@
 #ifdef SERF_ENABLE_BASELINE_SPRINTZ
 #include "baselines/sprintz/double_sprintz_compressor.h"
 #include "baselines/sprintz/double_sprintz_decompressor.h"
+#endif
+
+#ifdef SERF_ENABLE_BASELINE_BUFF_RUST
+#include "baselines/buff/buff_ffi.h"
 #endif
 
 #ifdef SERF_ENABLE_BASELINE_ALP

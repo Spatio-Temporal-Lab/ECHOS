@@ -48,6 +48,9 @@ const static std::vector<std::string> kMethodListOverall = {
 #ifdef SERF_ENABLE_BASELINE_SPRINTZ
     "Sprintz",
 #endif
+#ifdef SERF_ENABLE_BASELINE_BUFF_RUST
+    "Buff",
+#endif
 #ifdef SERF_ENABLE_BASELINE_DEFLATE
     "Deflate",
 #endif

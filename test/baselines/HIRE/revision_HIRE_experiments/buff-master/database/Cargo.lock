@@ -217,7 +217,6 @@ dependencies = [
  "quickcheck",
  "quickcheck_macros",
  "rand 0.6.5",
- "rocksdb",
  "rust_decimal",
  "rustfft",
  "serde",
@@ -707,18 +706,6 @@ name = "libm"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "292a948cd991e376cf75541fe5b97a1081d713c618b4f1b9500f8844e49eb565"
-
-[[package]]
-name = "librocksdb-sys"
-version = "6.20.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c309a9d2470844aceb9a4a098cf5286154d20596868b75a6b36357d2bb9ca25d"
-dependencies = [
- "bindgen",
- "cc",
- "glob",
- "libc",
-]
 
 [[package]]
 name = "linked-hash-map"
@@ -1445,16 +1432,6 @@ name = "retain_mut"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
-
-[[package]]
-name = "rocksdb"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d65bee9fe606c76fd90d6cc33b86bdafde0981b8a6b2d190ec1267e0d065baf8"
-dependencies = [
- "libc",
- "librocksdb-sys",
-]
 
 [[package]]
 name = "rust_decimal"

@@ -1528,6 +1528,84 @@ void PerfSprintz(std::ifstream &data_set_input_stream_ref, double max_diff, int 
 }
 #endif
 
+#ifdef SERF_ENABLE_BASELINE_BUFF_RUST
+std::size_t BuffScaleForAbsoluteError(double max_diff) {
+  if (!std::isfinite(max_diff) || max_diff <= 0.0) {
+    throw std::invalid_argument("BUFF requires a finite positive absolute error bound");
+  }
+
+  std::size_t scale = 1;
+  while (0.49 / static_cast<double>(scale) > max_diff) {
+    if (scale >= 1000000000000ULL) {
+      throw std::invalid_argument("BUFF supports at most 12 decimal places");
+    }
+    scale *= 10;
+  }
+  return scale;
+}
+
+void PerfBuff(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+              const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+  const std::size_t scale = BuffScaleForAbsoluteError(max_diff);
+
+  int block_count = 0;
+  std::vector<double> original_data;
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    BuffRustInput *input =
+        buff_rust_input_new(original_data.data(), original_data.size(), scale);
+    if (input == nullptr) {
+      throw std::runtime_error("Failed to prepare BUFF input for " + data_set);
+    }
+
+    const auto compression_start_time = std::chrono::steady_clock::now();
+    BuffRustCompressed *compressed = buff_rust_compress(input);
+    const auto compression_end_time = std::chrono::steady_clock::now();
+    buff_rust_input_free(input);
+    if (compressed == nullptr) {
+      throw std::runtime_error("Native BUFF compression failed for " + data_set);
+    }
+
+    perf_record.AddCompressedSize(
+        static_cast<long>(buff_rust_compressed_size(compressed) * 8));
+
+    std::vector<double> decompression_output(original_data.size());
+    const auto decompression_start_time = std::chrono::steady_clock::now();
+    const ptrdiff_t decompression_output_len =
+        buff_rust_decompress(compressed, decompression_output.data(),
+                             decompression_output.size());
+    const auto decompression_end_time = std::chrono::steady_clock::now();
+    buff_rust_compressed_free(compressed);
+
+    if (decompression_output_len != static_cast<ptrdiff_t>(original_data.size())) {
+      throw std::runtime_error("Native BUFF decompression failed for " + data_set);
+    }
+    for (std::size_t i = 0; i < original_data.size(); ++i) {
+      const double error = std::abs(original_data[i] - decompression_output[i]);
+      if (!std::isfinite(decompression_output[i]) || error > max_diff) {
+        throw std::runtime_error(
+            "Native BUFF exceeded the error bound for " + data_set +
+            " at block " + std::to_string(block_count) + ", offset " +
+            std::to_string(i) + ": error=" + std::to_string(error));
+      }
+    }
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        decompression_end_time - decompression_start_time);
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(
+      std::make_pair(ExprConf("Buff", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+#endif
+
 #ifdef SERF_ENABLE_BASELINE_ALP
 void PerfALP(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
              const std::string &data_set, ExprTable &table_to_insert) {
@@ -2507,6 +2585,9 @@ TEST(Perf, Overall) {
 #endif
 #ifdef SERF_ENABLE_BASELINE_SPRINTZ
     PerfSprintz(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_BUFF_RUST
+    PerfBuff(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 
     // Lossless Compression

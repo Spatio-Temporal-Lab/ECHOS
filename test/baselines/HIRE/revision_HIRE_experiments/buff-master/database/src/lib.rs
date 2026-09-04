@@ -19,6 +19,7 @@ pub mod segment;
 pub mod methods;
 pub mod simd;
 pub mod client;
+pub mod ffi;
 mod query;
 pub mod compress;
 pub mod pscan;
