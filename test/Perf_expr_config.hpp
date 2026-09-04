@@ -66,6 +66,9 @@ const static std::vector<std::string> kMethodListOverall = {
 #ifdef SERF_ENABLE_BASELINE_ELF
     "Elf",
 #endif
+#ifdef SERF_ENABLE_BASELINE_ELF_STAR
+    "Elf*",
+#endif
 #ifdef SERF_ENABLE_BASELINE_SERF
     "SerfQt",
 #endif

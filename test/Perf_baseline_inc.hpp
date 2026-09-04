@@ -37,6 +37,7 @@
 #define SERF_ENABLE_BASELINE_FPC
 #define SERF_ENABLE_BASELINE_CHIMP128
 #define SERF_ENABLE_BASELINE_ELF
+#define SERF_ENABLE_BASELINE_ELF_STAR
 #define SERF_ENABLE_BASELINE_GORILLA
 #define SERF_ENABLE_BASELINE_LZ77
 #define SERF_ENABLE_BASELINE_MACHETE
@@ -71,7 +72,9 @@
 
 #ifdef SERF_ENABLE_BASELINE_ELF
 #include "baselines/elf/elf.h"
+#endif
 
+#ifdef SERF_ENABLE_BASELINE_ELF_STAR
 #include "baselines/elf_star/elf_star.h"
 #endif
 

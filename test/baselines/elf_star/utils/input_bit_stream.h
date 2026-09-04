@@ -9,6 +9,7 @@
 #define be32toh(x) ntohl(x)
 #endif
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <vector>

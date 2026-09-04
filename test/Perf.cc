@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <stdexcept>
 
 #include "Perf_baseline_inc.hpp"
@@ -1181,6 +1182,55 @@ void PerfElf(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
 
   perf_record.set_block_count(block_count);
   table_to_insert.insert(std::make_pair(ExprConf("Elf", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+#endif
+
+#ifdef SERF_ENABLE_BASELINE_ELF_STAR
+void PerfElfStar(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
+                 const std::string &data_set, ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+
+    uint8_t *compression_output_buffer = nullptr;
+    std::vector<double> decompression_output(block_size);
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    const ssize_t compression_output_len_in_bytes =
+        elf_star_encode(original_data.data(), original_data.size(), &compression_output_buffer);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len_in_bytes * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    const ssize_t decompression_len =
+        elf_star_decode(compression_output_buffer, compression_output_len_in_bytes,
+                        decompression_output.data());
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    std::free(compression_output_buffer);
+
+    if (decompression_len != block_size) {
+      throw std::runtime_error("Elf* decompressed an unexpected number of values");
+    }
+
+    auto compression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        decompression_end_time - decompression_start_time);
+
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(
+      std::make_pair(ExprConf("Elf*", data_set, block_size, max_diff), perf_record));
   ResetFileStream(data_set_input_stream_ref);
 }
 #endif
@@ -2471,6 +2521,9 @@ TEST(Perf, Overall) {
 #endif
 #ifdef SERF_ENABLE_BASELINE_ELF
     PerfElf(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF_STAR
+    PerfElfStar(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
 #ifdef SERF_ENABLE_BASELINE_FPC
     PerfFPC(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
