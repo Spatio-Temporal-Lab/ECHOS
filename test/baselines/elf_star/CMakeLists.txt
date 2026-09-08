@@ -1,18 +1,13 @@
-cmake_minimum_required(VERSION 3.20)
+add_library(elf_star STATIC
+    ElfStarCompressor.cpp
+    ElfStarDecompressor.cpp
+    ElfStarCompressor32.cpp
+    ElfStarDecompressor32.cpp
+    utils.cc
+    utils/post_office_solver.cc
+    utils/post_office_solver_32.cc
+)
 
-project(Elf_Star)
-
-# Set C++ standard version
-set(CMAKE_CXX_STANDARD 17)
-
-# -O3 Optimization for release version
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-
-# Set parallel compilation level as 4
-set(CMAKE_BUILD_PARALLEL_LEVEL 4)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-file(GLOB_RECURSE LIB_SRC *.cpp *.c *.cc)
-
-add_library(elf_star SHARED ${LIB_SRC})
+target_include_directories(elf_star PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(elf_star PUBLIC cxx_std_17)
+target_compile_options(elf_star PRIVATE $<$<CONFIG:Release>:-O3>)

@@ -37,6 +37,9 @@ static int getSignificantCount_32(float v, int sp, int lastBetaStar);
 static double get10iP(int i);
 static float get10iP_32(int i);
 static int *getSPAnd10iNFlag(double v);
+static int *getSPAnd10iNFlag_32(float v);
+
+namespace elfstar_utils {
 
 int getFAlpha(int alpha) {
   assert(alpha >= 0);
@@ -51,7 +54,7 @@ int *getAlphaAndBetaStar(double v, int lastBetaStar) {
   v = v < 0 ? -v : v;
   int *alphaAndBetaStar = new int[2];
   int *spAnd10iNFlag = getSPAnd10iNFlag(v);
-  int beta = getSignificantCount(v, spAnd10iNFlag[0], lastBetaStar);
+  int beta = ::getSignificantCount(v, spAnd10iNFlag[0], lastBetaStar);
   alphaAndBetaStar[0] = beta - spAnd10iNFlag[0] - 1;
   alphaAndBetaStar[1] = spAnd10iNFlag[1] == 1 ? 0 : beta;
   delete[] spAnd10iNFlag;
@@ -61,8 +64,8 @@ int *getAlphaAndBetaStar(double v, int lastBetaStar) {
 int *getAlphaAndBetaStar_32(float v, int lastBetaStar) {
   v = v < 0 ? -v : v;
   int *alphaAndBetaStar = new int[2];
-  int *spAnd10iNFlag = getSPAnd10iNFlag(v);
-  int beta = getSignificantCount_32(v, spAnd10iNFlag[0], lastBetaStar);
+  int *spAnd10iNFlag = getSPAnd10iNFlag_32(v);
+  int beta = ::getSignificantCount_32(v, spAnd10iNFlag[0], lastBetaStar);
   alphaAndBetaStar[0] = beta - spAnd10iNFlag[0] - 1;
   alphaAndBetaStar[1] = spAnd10iNFlag[1] == 1 ? 0 : beta;
   delete[] spAnd10iNFlag;
@@ -87,71 +90,7 @@ float roundUp_32(float v, int alpha) {
   }
 }
 
-static int getSignificantCount(double v, int sp, int lastBetaStar) {
-  int i;
-  if (lastBetaStar != __INT32_MAX__ && lastBetaStar != 0) {
-    i = lastBetaStar - sp - 1;
-    i = i > 1 ? i : 1;
-  } else if (lastBetaStar == __INT32_MAX__) {
-    i = 17 - sp - 1;
-  } else if (sp >= 0) {
-    i = 1;
-  } else {
-    i = -sp;
-  }
-
-  double temp = v * get10iP(i);
-  long tempLong = (long) temp;
-  while (tempLong != temp) {
-    i++;
-    temp = v * get10iP(i);
-    tempLong = (long) temp;
-  }
-
-  if (temp / get10iP(i) != v) {
-    return 17;
-  } else {
-    while (i > 0 && tempLong % 10 == 0) {
-      i--;
-      tempLong = tempLong / 10;
-    }
-    return sp + i + 1;
-  }
-}
-
-static int getSignificantCount_32(float v, int sp, int lastBetaStar) {
-  int i;
-  if (lastBetaStar != __INT32_MAX__ && lastBetaStar != 0) {
-    i = lastBetaStar - sp - 1;
-    i = i > 1 ? i : 1;
-  } else if (lastBetaStar == __INT32_MAX__) {
-    i = 8 - sp - 1;
-  } else if (sp >= 0) {
-    i = 1;
-  } else {
-    i = -sp;
-  }
-
-  float temp = v * get10iP_32(i);
-  int tempInt = (int) temp;
-  while (tempInt != temp) {
-    i++;
-    temp = v * get10iP_32(i);
-    tempInt = (int) temp;
-  }
-
-  if (temp / get10iP_32(i) != v) {
-    return 8;
-  } else {
-    while (i > 0 && tempInt % 10 == 0) {
-      i--;
-      tempInt = tempInt / 10;
-    }
-    return sp + i + 1;
-  }
-}
-
-static double get10iP(int i) {
+double get10iP(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iP)) {
     return pow(10, i);
@@ -160,7 +99,7 @@ static double get10iP(int i) {
   }
 }
 
-static float get10iP_32(int i) {
+float get10iP_32(int i) {
   assert(i >= 0);
   if (i >= LENGTH_OF(map10iP)) {
     return powf(10, i);
@@ -208,8 +147,8 @@ int getSP(double v) {
   return (int) floor(log10(v));
 }
 
-static int *getSPAnd10iNFlag(double v) {
-  int *spAnd10iNFlag = new int[2];
+int *getSPAnd10iNFlag(double v) {
+  int *spAnd10iNFlag = new int[2]{0, 0};
   if (v >= 1) {
     int i = 0;
     while (i < LENGTH_OF(mapSPGreater1) - 1) {
@@ -234,4 +173,99 @@ static int *getSPAnd10iNFlag(double v) {
   spAnd10iNFlag[0] = (int) floor(log10v);
   spAnd10iNFlag[1] = log10v == (long) log10v ? 1 : 0;
   return spAnd10iNFlag;
+}
+
+int *getSPAnd10iNFlag_32(float v) {
+  int *spAnd10iNFlag = new int[2]{0, 0};
+  if (v >= 1.0f) {
+    int i = 0;
+    while (i < LENGTH_OF(mapSPGreater1) - 1) {
+      if (v < mapSPGreater1[i + 1]) {
+        spAnd10iNFlag[0] = i;
+        return spAnd10iNFlag;
+      }
+      i++;
+    }
+  } else {
+    int i = 1;
+    while (i < LENGTH_OF(mapSPLess1_32)) {
+      if (v >= mapSPLess1_32[i]) {
+        spAnd10iNFlag[0] = -i;
+        spAnd10iNFlag[1] = v == mapSPLess1_32[i] ? 1 : 0;
+        return spAnd10iNFlag;
+      }
+      i++;
+    }
+  }
+  float log10v = log10f(v);
+  spAnd10iNFlag[0] = (int) floorf(log10v);
+  spAnd10iNFlag[1] = log10v == (long) log10v ? 1 : 0;
+  return spAnd10iNFlag;
+}
+
+} // namespace elfstar_utils
+
+// Static functions used internally
+static int getSignificantCount(double v, int sp, int lastBetaStar) {
+  int i;
+  if (lastBetaStar != __INT32_MAX__ && lastBetaStar != 0) {
+    i = lastBetaStar - sp - 1;
+    i = i > 1 ? i : 1;
+  } else if (lastBetaStar == __INT32_MAX__) {
+    i = 17 - sp - 1;
+  } else if (sp >= 0) {
+    i = 1;
+  } else {
+    i = -sp;
+  }
+
+  double temp = v * elfstar_utils::get10iP(i);
+  long tempLong = (long) temp;
+  while (tempLong != temp) {
+    i++;
+    temp = v * elfstar_utils::get10iP(i);
+    tempLong = (long) temp;
+  }
+
+  if (temp / elfstar_utils::get10iP(i) != v) {
+    return 17;
+  } else {
+    while (i > 0 && tempLong % 10 == 0) {
+      i--;
+      tempLong = tempLong / 10;
+    }
+    return sp + i + 1;
+  }
+}
+
+static int getSignificantCount_32(float v, int sp, int lastBetaStar) {
+  int i;
+  if (lastBetaStar != __INT32_MAX__ && lastBetaStar != 0) {
+    i = lastBetaStar - sp - 1;
+    i = i > 1 ? i : 1;
+  } else if (lastBetaStar == __INT32_MAX__) {
+    i = 8 - sp - 1;
+  } else if (sp >= 0) {
+    i = 1;
+  } else {
+    i = -sp;
+  }
+
+  float temp = v * elfstar_utils::get10iP_32(i);
+  int tempInt = (int) temp;
+  while (tempInt != temp) {
+    i++;
+    temp = v * elfstar_utils::get10iP_32(i);
+    tempInt = (int) temp;
+  }
+
+  if (temp / elfstar_utils::get10iP_32(i) != v) {
+    return 8;
+  } else {
+    while (i > 0 && tempInt % 10 == 0) {
+      i--;
+      tempInt = tempInt / 10;
+    }
+    return sp + i + 1;
+  }
 }

@@ -23,7 +23,7 @@ class PostOfficeSolver {
 
   static Array<int> InitRoundAndRepresentation(Array<int> &distribution, Array<int> &representation, Array<int> &round);
 
-  static int WritePositions(Array<int> &positions, BitWriter *writer);
+    static int WritePositions(const Array<int> &positions, BitWriter *writer);
 
  private:
   constexpr static int kPow2z[] = {1, 2, 4, 8, 16, 32};

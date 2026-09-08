@@ -176,15 +176,15 @@ class ElfStarDecompressor {
   double recoverVByBetaStar() {
     double v;
     double vPrime = xorDecompressor.readValue();
-    int sp = getSP(abs(vPrime));
+    int sp = elfstar_utils::getSP(abs(vPrime));
     if (lastBetaStar == 0) {
-      v = get10iN(-sp - 1);
+      v = elfstar_utils::get10iN(-sp - 1);
       if (vPrime < 0) {
         v = -v;
       }
     } else {
       int alpha = lastBetaStar - sp - 1;
-      v = roundUp(vPrime, alpha);
+      v = elfstar_utils::roundUp(vPrime, alpha);
     }
     return v;
   }
@@ -200,9 +200,6 @@ class ElfStarDecompressor {
   int decompress(double *output) {
     int len = getLength();
     for (int i = 0; i < len; i++) {
-      if (i == 4219) {
-        asm("nop");
-      }
       output[i] = nextValue();
     }
     return len;

@@ -125,11 +125,18 @@ const static int kBlockSizeList[] = {50, 100, 200, 400, 600, 800, 1000};
 const static int kBlockSizeList_ADT[] = {200, 400, 600, 800, 1000};
 // Single precision experiment config
 const static std::string kDataSetList32[] = {
+    "Air-pressure.csv",
+    "Basel-temp.csv",
     "Basel-wind.csv",
     "Chengdu-traj.csv",
+    "City-temp.csv",
     "Dew-point-temp.csv",
+    "IR-bio-temp.csv",
+    "Motor-temp.csv",
     "PM10-dust.csv",
     "Smart-grid.csv",
+    "Stocks-USA.csv",
+    "T-drive.csv",
     "Wind-Speed.csv"
 };
 const static std::vector<std::string> kMethodList32 = {
@@ -156,6 +163,9 @@ const static std::vector<std::string> kMethodList32 = {
 #endif
 #ifdef SERF_ENABLE_BASELINE_ELF
     "Elf",
+#endif
+#ifdef SERF_ENABLE_BASELINE_ELF_STAR
+    "Elf*",
 #endif
 #ifdef SERF_ENABLE_BASELINE_SERF
     "SerfQt",

@@ -52,7 +52,12 @@ class ElfStarXORCompressor {
     int writeFirst(long value) {
       first = false;
       storedVal = value;
-      int trailingZeros = __builtin_ctzl(value);
+      int trailingZeros;
+      if (value == 0) {
+        trailingZeros = 64;
+      } else {
+        trailingZeros = __builtin_ctzl(value); //TODO
+      }
       write(&writer, trailingZeros, 7);
       // if (trailingZeros < 64) { optimized-out somehow, assuming __builtin_ctzl
       // always < 64 ?
@@ -235,9 +240,9 @@ class ElfStarCompressor {
         vPrimeList[numberOfValues] = 0xfff8000000000000L & data.i;
         betaStarList[numberOfValues] = __INT32_MAX__;
       } else {
-        int *alphaAndBetaStar = getAlphaAndBetaStar(v, lastBetaStar);
+        int *alphaAndBetaStar = elfstar_utils::getAlphaAndBetaStar(v, lastBetaStar);
         int e = ((int) (data.i >> 52)) & 0x7ff;
-        int gAlpha = getFAlpha(alphaAndBetaStar[0]) + e - 1023;
+        int gAlpha = elfstar_utils::getFAlpha(alphaAndBetaStar[0]) + e - 1023;
         int eraseBits = 52 - gAlpha;
         long mask = 0xffffffffffffffffL << eraseBits;
         long delta = (~mask) & data.i;
@@ -328,9 +333,6 @@ ssize_t elf_star_encode(double *in, ssize_t len, uint8_t **out) {
   ElfStarCompressor compressor;
   compressor.init(len);
   for (int i = 0; i < len; i++) {
-    if (i == 4219) {
-      asm("nop");
-    }
     compressor.addValue(in[i]);
   }
   compressor.close();
