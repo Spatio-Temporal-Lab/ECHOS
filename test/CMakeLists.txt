@@ -81,10 +81,6 @@ if(SERF_ENABLE_BASELINE_ZSTD)
     add_subdirectory(baselines/zstd/build/cmake)
 endif()
 
-if(UNIX)
-    target_compile_definitions(ZLIB PRIVATE HAVE_UNISTD_H=1)
-endif()
-
 if(SERF_ENABLE_BASELINE_SIM_PIECE)
     add_subdirectory(baselines/sim_piece)
 endif()
