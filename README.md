@@ -75,7 +75,6 @@
 ```
 .
 ├── CMakeLists.txt			# Global CMake building configs
-├── CODE_OF_CONDUCT.md		# Code of Conduct
 ├── README.md				# README manuals
 ├── src						# Source code of Serf
 └── test					# Unit tests and benchmark programs
@@ -209,7 +208,7 @@ cmake --build build --target serf_test PerformanceProgram
 ./build/test/PerformanceProgram
 ```
 
-## :triangular_ruler:Code of Conduct
+## :triangular_ruler:Code Style
 
 Refer to [Google C++ Style](https://google.github.io/styleguide/cppguide.html).
 

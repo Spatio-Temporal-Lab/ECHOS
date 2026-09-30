@@ -122,11 +122,10 @@ const static double kMaxDiffList[] = {
     1.0E-6};
 // Param experiment (block size) config
 const static std::string kMethodListParamBlockSize[] = {
-    "SZ3", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
+    "SZ3", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "ALP", "Sprintz"
 };
 const static double kAbsMaxDiffParamBlockSize = kMaxDiffOverall;
 const static int kBlockSizeList[] = {50, 100, 200, 400, 600, 800, 1000};
-const static int kBlockSizeList_ADT[] = {200, 400, 600, 800, 1000};
 // Single precision experiment config
 const static std::string kDataSetList32[] = {
     "Air-pressure.csv",

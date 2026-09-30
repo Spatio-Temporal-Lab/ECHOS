@@ -28,7 +28,6 @@ set(SERF_ENABLE_BASELINE_SIM_PIECE ON)
 set(SERF_ENABLE_BASELINE_SPRINTZ ON)
 set(SERF_ENABLE_BASELINE_BUFF_RUST ON)
 set(SERF_ENABLE_BASELINE_ALP ON)
-set(SERF_ENABLE_BASELINE_SZ_ADT ON)
 set(SERF_ENABLE_BASELINE_DEXOR ON)
 
 if(SERF_ENABLE_BASELINE_DEFLATE)
@@ -113,9 +112,6 @@ if(SERF_ENABLE_BASELINE_ALP)
     add_subdirectory(baselines/alp)
 endif()
 
-if(SERF_ENABLE_BASELINE_SZ_ADT)
-    add_subdirectory(baselines/sz_adt)
-endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -264,11 +260,6 @@ endif()
 
 target_link_libraries(PerformanceProgram PRIVATE ${PERFORMANCE_PROGRAM_LIBS})
 
-if(SERF_ENABLE_BASELINE_SZ_ADT)
-    add_executable(PerformanceProgram_ADT Perf_Conflict_ADT.cc)
-    target_link_libraries(PerformanceProgram_ADT PRIVATE TSZ GTest::gtest_main)
-    gtest_discover_tests(PerformanceProgram_ADT)
-endif()
 
 gtest_discover_tests(PerformanceProgram)
 endif()
