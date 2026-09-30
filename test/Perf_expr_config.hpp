@@ -25,7 +25,8 @@ const static std::string kDataSetList[] = {
     "T-drive.csv",
     "Wind-Speed.csv"
 };
-// Overall experiment config
+// Overall experiment config. DeXOR is executed by the independent Java
+// adapter in test/run_dexor_overall.sh and merged into these generated tables.
 const static std::vector<std::string> kMethodListOverall = {
 #ifdef SERF_ENABLE_BASELINE_LZ77
     "LZ77",
@@ -38,6 +39,9 @@ const static std::vector<std::string> kMethodListOverall = {
 #endif
 #ifdef SERF_ENABLE_BASELINE_SZ2
     "SZ2",
+#endif
+#ifdef SERF_ENABLE_BASELINE_SZ3
+    "SZ3",
 #endif
 #ifdef SERF_ENABLE_BASELINE_MACHETE
     "Machete",
@@ -106,7 +110,7 @@ const static double kMaxDiffRelOverall = 1.0E-2;
 const static int kBlockSizeRelOverall = kBlockSizeOverall;
 // Param experiment (abs max_diff) config
 const static std::string kMethodListParamAbsMaxDiff[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "Sprintz"
+    "SZ3", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "Sprintz"
 };
 const static int kBlockSizeParamAbsMaxDiff = kBlockSizeOverall;
 const static double kMaxDiffList[] = {
@@ -118,7 +122,7 @@ const static double kMaxDiffList[] = {
     1.0E-6};
 // Param experiment (block size) config
 const static std::string kMethodListParamBlockSize[] = {
-    "SZ2", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
+    "SZ3", "Machete", "SimPiece", "SerfQt", "ECHOS", "SerfXOR", "ALP", "SZ-ADT", "Sprintz"
 };
 const static double kAbsMaxDiffParamBlockSize = kMaxDiffOverall;
 const static int kBlockSizeList[] = {50, 100, 200, 400, 600, 800, 1000};

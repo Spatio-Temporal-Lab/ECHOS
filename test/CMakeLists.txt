@@ -21,6 +21,7 @@ set(SERF_ENABLE_BASELINE_ELF_STAR ON)
 set(SERF_ENABLE_BASELINE_LZ77 ON)
 set(SERF_ENABLE_BASELINE_MACHETE ON)
 set(SERF_ENABLE_BASELINE_SZ2 ON)
+set(SERF_ENABLE_BASELINE_SZ3 ON)
 set(SERF_ENABLE_BASELINE_SNAPPY ON)
 set(SERF_ENABLE_BASELINE_ZSTD ON)
 set(SERF_ENABLE_BASELINE_SIM_PIECE ON)
@@ -28,6 +29,7 @@ set(SERF_ENABLE_BASELINE_SPRINTZ ON)
 set(SERF_ENABLE_BASELINE_BUFF_RUST ON)
 set(SERF_ENABLE_BASELINE_ALP ON)
 set(SERF_ENABLE_BASELINE_SZ_ADT ON)
+set(SERF_ENABLE_BASELINE_DEXOR ON)
 
 if(SERF_ENABLE_BASELINE_DEFLATE)
     add_subdirectory(baselines/deflate)
@@ -71,6 +73,20 @@ endif()
 
 if(SERF_ENABLE_BASELINE_SZ2)
     add_subdirectory(baselines/sz2)
+endif()
+
+if(SERF_ENABLE_BASELINE_SZ3)
+    include(FetchContent)
+    set(BUILD_SZ3_BINARY OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(SZ3_INSTALL OFF CACHE BOOL "" FORCE)
+    set(SZ3_USE_BUNDLED_ZSTD ON CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        sz3_upstream
+        GIT_REPOSITORY https://github.com/szcompressor/SZ3.git
+        GIT_TAG d5aeef009d90bf7832e516762b095d7668c135db
+        GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(sz3_upstream)
 endif()
 
 if(SERF_ENABLE_BASELINE_SNAPPY)
@@ -224,6 +240,9 @@ endif()
 if(SERF_ENABLE_BASELINE_SZ2)
     list(APPEND PERFORMANCE_PROGRAM_LIBS sz)
 endif()
+if(SERF_ENABLE_BASELINE_SZ3)
+    list(APPEND PERFORMANCE_PROGRAM_LIBS SZ3::SZ3core)
+endif()
 if(SERF_ENABLE_BASELINE_ZSTD)
     list(APPEND PERFORMANCE_PROGRAM_LIBS libzstd_shared)
 endif()
@@ -255,3 +274,20 @@ gtest_discover_tests(PerformanceProgram)
 endif()
 
 add_executable(AdjustDigitCalculator adjust_digit_calculator.cpp)
+
+# DeXOR remains an independent Java benchmark so JNI and JVM startup costs do
+# not enter its per-segment measurements. Running this target builds the Java
+# adapter, executes three measured passes, and merges its row into the existing
+# FP64 overall CSV files.
+if(SERF_ENABLE_BASELINE_DEXOR)
+    find_package(Java 1.8 COMPONENTS Runtime Development QUIET)
+    if(Java_FOUND)
+        add_custom_target(DeXOROverall
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_dexor_overall.sh
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            USES_TERMINAL
+            COMMENT "Running the independent DeXOR FP64 overall benchmark")
+    else()
+        message(WARNING "OpenJDK 8 was not found; DeXOROverall is unavailable")
+    endif()
+endif()

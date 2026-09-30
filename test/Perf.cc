@@ -1441,6 +1441,65 @@ void PerfSZ2(std::ifstream &data_set_input_stream_ref, double max_diff, int bloc
 }
 #endif
 
+#ifdef SERF_ENABLE_BASELINE_SZ3
+void PerfSZ3(std::ifstream &data_set_input_stream_ref, double max_diff,
+             int block_size, const std::string &data_set,
+             ExprTable &table_to_insert) {
+  PerfRecord perf_record;
+  int block_count = 0;
+  std::vector<double> original_data;
+
+  while ((original_data = ReadBlock(data_set_input_stream_ref, block_size)).size() == block_size) {
+    ++block_count;
+    SZ3::Config compression_config(block_size);
+    compression_config.errorBoundMode = SZ3::EB_ABS;
+    compression_config.absErrorBound = max_diff * 0.99;
+    SZ3::Config decompression_config;
+    size_t compression_output_len = 0;
+    double *decompression_output = new double[block_size];
+
+    auto compression_start_time = std::chrono::steady_clock::now();
+    char *compression_output =
+        SZ_compress(compression_config, original_data.data(), compression_output_len);
+    auto compression_end_time = std::chrono::steady_clock::now();
+
+    perf_record.AddCompressedSize(compression_output_len * 8);
+
+    auto decompression_start_time = std::chrono::steady_clock::now();
+    SZ_decompress(decompression_config, compression_output,
+                  compression_output_len, decompression_output);
+    auto decompression_end_time = std::chrono::steady_clock::now();
+
+    auto compression_time_in_a_block =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            compression_end_time - compression_start_time);
+    auto decompression_time_in_a_block =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            decompression_end_time - decompression_start_time);
+    perf_record.IncreaseCompressionTime(compression_time_in_a_block);
+    perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
+
+    for (int index = 0; index < block_size; ++index) {
+      const double error =
+          std::abs(original_data[index] - decompression_output[index]);
+      if (error > max_diff) {
+        delete[] compression_output;
+        delete[] decompression_output;
+        throw std::runtime_error("SZ3 absolute error bound violated");
+      }
+    }
+
+    delete[] compression_output;
+    delete[] decompression_output;
+  }
+
+  perf_record.set_block_count(block_count);
+  table_to_insert.insert(std::make_pair(
+      ExprConf("SZ3", data_set, block_size, max_diff), perf_record));
+  ResetFileStream(data_set_input_stream_ref);
+}
+#endif
+
 #ifdef SERF_ENABLE_BASELINE_SIM_PIECE
 void PerfSimPiece(std::ifstream &data_set_input_stream_ref, double max_diff, int block_size,
                   const std::string &data_set, ExprTable &table_to_insert) {
@@ -2271,13 +2330,16 @@ void PerfSerfXOR_Without_FastSearch(std::ifstream &data_set_input_stream_ref, do
 }
 #endif
 
-// Relational error-bound
+// Pointwise relative error bound
 
 #ifdef SERF_ENABLE_BASELINE_SZ2
 void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int block_size,
                 const std::string &data_set, ExprTable &table_to_insert) {
   PerfRecord perf_record;
-
+  if (confparams_cpr == nullptr) SZ_Init(nullptr);
+  // The accelerated SZ2 PW_REL path can violate the bound on mixed-sign
+  // blocks, so use the general sign-aware path for a valid comparison.
+  confparams_cpr->accelerate_pw_rel_compression = 0;
   int block_count = 0;
   std::vector<double> original_data;
 
@@ -2288,7 +2350,8 @@ void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int b
 
     auto compression_start_time = std::chrono::steady_clock::now();
     auto compression_output = SZ_compress_args(SZ_DOUBLE, original_data.data(), &compression_output_len,
-                                               REL, 0, rel_diff, 0, 0, 0, 0, 0, original_data.size());
+                                               PW_REL, 0, 0, rel_diff * 0.99,
+                                               0, 0, 0, 0, original_data.size());
     auto compression_end_time = std::chrono::steady_clock::now();
 
     perf_record.AddCompressedSize(compression_output_len * 8);
@@ -2307,6 +2370,29 @@ void PerfSZ2Rel(std::ifstream &data_set_input_stream_ref, double rel_diff, int b
     perf_record.IncreaseCompressionTime(compression_time_in_a_block);
     perf_record.IncreaseDecompressionTime(decompression_time_in_a_block);
 
+    for (int index = 0; index < block_size; ++index) {
+      const double original = original_data[index];
+      const double reconstructed = decompression_output[index];
+      const bool within_bound =
+          original == 0.0
+              ? reconstructed == 0.0
+              : std::abs(original - reconstructed) / std::abs(original) <= rel_diff;
+      if (!within_bound) {
+        const double relative_error =
+            original == 0.0
+                ? std::numeric_limits<double>::infinity()
+                : std::abs(original - reconstructed) / std::abs(original);
+        std::cerr << "SZ2 PW_REL violation: dataset=" << data_set << ", block=" << block_count
+                  << ", index=" << index << ", original=" << original << ", reconstructed=" << reconstructed
+                  << ", relative_error=" << relative_error << ", bound=" << rel_diff << std::endl;
+        std::free(compression_output);
+        delete[] decompression_output;
+        throw std::runtime_error(
+            "SZ2 pointwise relative error bound violated");
+      }
+    }
+
+    std::free(compression_output);
     delete[] decompression_output;
   }
 
@@ -2629,6 +2715,9 @@ TEST(Perf, Overall) {
 #ifdef SERF_ENABLE_BASELINE_SZ2
     PerfSZ2(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
+#ifdef SERF_ENABLE_BASELINE_SZ3
+    PerfSZ3(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
+#endif
 #ifdef SERF_ENABLE_BASELINE_SIM_PIECE
     PerfSimPiece(data_input_stream, kMaxDiffOverall, kBlockSizeOverall, data_set, expr_table_overall);
 #endif
@@ -2699,7 +2788,7 @@ TEST(Perf, ParamAbsMaxDiff) {
       PerfSerfQt(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfEchosAbs(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSimPiece(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
-      PerfSZ2(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
+      PerfSZ3(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfMachete(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
       PerfSprintz(data_input_stream, max_diff, kBlockSizeParamAbsMaxDiff, data_set, expr_table_abs_diff);
     }
@@ -2728,7 +2817,7 @@ TEST(Perf, ParamBlockSize) {
                    data_set,
                    expr_table_block_size);
       PerfSimPiece(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
-      PerfSZ2(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
+      PerfSZ3(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfMachete(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       PerfSprintz(data_input_stream, kAbsMaxDiffParamBlockSize, block_size, data_set, expr_table_block_size);
       if (block_size >= 600) {
@@ -3067,4 +3156,3 @@ TEST(Perf, TSBS) {
   GenTSBSTableDT(expr_table_tsbs);
 }
 #endif
-
