@@ -54,11 +54,6 @@
 
    Replace `{$CORE_NUMS}` with the number of your CPU cores or a number lower. This would bring you out from boring time of waiting.
 
-   If you want to build *Serf* with command-line interface, please run:
-
-   ```bash
-   cmake --build ./build --target sfz --config release -j{$CORE_NUMS}
-   ```
 
    If you want to build the benchmark program, please run:
 
@@ -72,49 +67,6 @@
    cmake --build ./build --config release -j{$CORE_NUMS}
    ```
 
-## :floppy_disk:Usage
-
-### Command-line interface
-
-Once you have built *Serf* with command-line interface, you can run it in the console.
-
-Example: (Assume your working directory is the root directory of the source code)
-
-```bash
-# Compression
-./build/serf_cmd/sfz compress 0.01 ./input.txt ./output.sfz
-
-# Decompression
-./build/serf_cmd/sfz decompress 0.01 ./input.sfz ./output.txt
-
-# Get help
-./build/serf_cmd/sfz
-```
-
-:bell:*️Tips*
-
-This is only a demo program, so it might not work under certain circumstances.
-
-### As a library
-
-The demo program mentioned above is a good example for you to learn how to link *Serf* to your program.
-
-Check the `CMakeLists.txt` in the `serf_cmd`:
-
-```cmake
-cmake_minimum_required(VERSION 3.10)
-
-project(sfz)
-
-# Your program here
-add_executable(sfz cmd_interface.cc)
-
-# Add the source code directory of Serf to your including directories
-target_include_directories(sfz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-
-# Link Serf to your program
-target_link_libraries(sfz PRIVATE serf)
-```
 
 ## :file_folder:Project Structure
 
@@ -124,9 +76,7 @@ target_link_libraries(sfz PRIVATE serf)
 .
 ├── CMakeLists.txt			# Global CMake building configs
 ├── CODE_OF_CONDUCT.md		# Code of Conduct
-├── pywrapper				# Python interface of Serf
 ├── README.md				# README manuals
-├── serf_cmd				# Command-line interface of Serf
 ├── src						# Source code of Serf
 └── test					# Unit tests and benchmark programs
 ```
@@ -207,12 +157,6 @@ test
 ```
 
 The names of all test suites in `Perf.cc` are consistent with those of the experiments in the paper.
-
-## :snake:Python Interface
-
-We design an interface for Python programs so that developers can use *Serf* in their applications.
-
-More details refer to [Python Interface Documents](https://github.com/Spatio-Temporal-Lab/Serf/tree/new/pywrapper)
 
 ## :microscope:Reproduction
 

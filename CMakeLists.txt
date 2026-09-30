@@ -28,9 +28,3 @@ add_subdirectory(src)
 
 # To run perf programs and unit tests
 add_subdirectory(test)
-
-# Serf command line interface
-add_subdirectory(serf_cmd)
-
-# Uncomment this line to use Python interface of Serf
-# add_subdirectory(pywrapper)
