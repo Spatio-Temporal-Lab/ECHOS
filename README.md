@@ -152,7 +152,6 @@ test
 ├── Perf_expr_config.hpp		# Configs of experiments
 ├── Perf_expr_data_struct.hpp	# Data structures for storing intermediate results
 ├── Perf_file_utils.hpp			# Utils for benchmark program
-├── reproduction_on_modelardb	# Reproduction of ModelarDB-related data
 └── unit_test					# All unit tests
 ```
 
